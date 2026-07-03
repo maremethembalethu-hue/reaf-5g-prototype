@@ -1,0 +1,55 @@
+version: '3.9'
+
+services:
+
+  
+  #  5G EDGE NODE
+  #  Sits on the Open5GS network and captures
+  #  all traffic flowing through the MEC node
+  
+  5g-edge-node:
+    build: ./5g-edge-node
+    container_name: 5g-edge-node
+    cap_add:
+      - NET_ADMIN      # needed for packet capture
+      - SYS_ADMIN      # needed for raw socket access
+    privileged: true   # needed for Scapy inside Docker
+    networks:
+      - open5gs_net
+    volumes:
+      - ./evidence:/evidence   # forensic artefacts written here
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  
+  #  IOT TRAFFIC GENERATOR
+  #  Sends simulated IoT traffic into the network
+  #  Start this AFTER edge node is running
+  
+  iot-traffic-generator:
+    build: ./iot-traffic-generator
+    container_name: iot-traffic-generator
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - open5gs_net
+    depends_on:
+      - 5g-edge-node
+    restart: unless-stopped
+
+
+#  NETWORK
+#  Joins the existing Open5GS Docker network so your containers can see 5G traffic
+#  Open5GS must be running BEFORE you run this
+
+networks:
+  open5gs_net:
+    external: true
+    name: docker_open5gs_default
