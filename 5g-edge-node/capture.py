@@ -1,8 +1,7 @@
-"""
-capture.py — Minimal Packet Capture
-Stage 1: Verify the edge node can see traffic on the network.
-Detection, acquisition, and preservation logic added later.
-"""
+
+#capture.py — Minimal Packet Capture
+
+
 
 import os
 import sys
