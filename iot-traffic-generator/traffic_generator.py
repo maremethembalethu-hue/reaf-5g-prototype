@@ -1,9 +1,4 @@
-"""
-traffic_generator.py — Minimal Traffic Generator
-Stage 1: Send basic test packets to confirm the edge node
-         is capturing traffic on the Docker network.
-CICIoT2023 dataset replay added in the next stage.
-"""
+# Send basic test packets to confirm the edge node is capturing traffic on the Docker network.
 
 import time
 import logging
@@ -21,8 +16,8 @@ log = logging.getLogger(__name__)
 # This is the Open5GS UPF container IP on the Docker network.
 # When Open5GS is running, the UPF sits at this address.
 # Your edge node will intercept this traffic as it flows past.
-TARGET_IP   = "10.45.0.1"     # UPF internal IP — adjust if different
-SOURCE_IP   = "10.45.0.2"     # Simulated UE IP assigned by Open5GS
+TARGET_IP   = "192.168.100.0"     # UPF internal IP — adjust if different
+SOURCE_IP   = "192.168.100.1"     # Simulated UE IP assigned by Open5GS
 
 # How long to wait between packets (seconds)
 INTERVAL    = 2
