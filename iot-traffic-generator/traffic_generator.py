@@ -16,8 +16,8 @@ log = logging.getLogger(__name__)
 # This is the Open5GS UPF container IP on the Docker network.
 # When Open5GS is running, the UPF sits at this address.
 # Your edge node will intercept this traffic as it flows past.
-TARGET_IP   = "192.168.100.0"     # UPF internal IP — adjust if different
-SOURCE_IP   = "192.168.100.1"     # Simulated UE IP assigned by Open5GS
+TARGET_IP   = "192.168.100.1"     # UPF internal IP — adjust if different
+SOURCE_IP   = "192.168.100.2"     # Simulated UE IP assigned by Open5GS
 
 # How long to wait between packets (seconds)
 INTERVAL    = 2
