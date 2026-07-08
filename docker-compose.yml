@@ -1,23 +1,28 @@
-version: '3.9'
-
 services:
 
-  
+  # ─────────────────────────────────────────────────────────────────────
   #  5G EDGE NODE
-  #  Sits on the Open5GS network and captures
-  #  all traffic flowing through the MEC node
-  
+  #  Runs inside the UPF network namespace so it can see ogstun traffic.
+  #  This is NOT started by docker compose up — start.sh runs it
+  #  manually with --network container:upf so it shares the UPF
+  #  network namespace directly.
+  #
+  #  If you want to start it standalone for development only:
+  #    docker compose up --build 5g-edge-node
+  #  But for full system use start.sh instead.
+  # ─────────────────────────────────────────────────────────────────────
   5g-edge-node:
     build: ./5g-edge-node
     container_name: 5g-edge-node
     cap_add:
-      - NET_ADMIN      # needed for packet capture
-      - SYS_ADMIN      # needed for raw socket access
-    privileged: true   # needed for Scapy inside Docker
-    networks:
-      - open5gs_net
+      - NET_ADMIN
+      - SYS_ADMIN
+    privileged: true
     volumes:
-      - ./evidence:/evidence   # forensic artefacts written here
+      - ./evidence:/evidence
+    environment:
+      - CAPTURE_INTERFACE=any
+      - UE_SUBNET=192.168.100.0/24
     restart: unless-stopped
     deploy:
       resources:
@@ -28,28 +33,18 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  
+  # ─────────────────────────────────────────────────────────────────────
   #  IOT TRAFFIC GENERATOR
-  #  Sends simulated IoT traffic into the network
-  #  Start this AFTER edge node is running
-  
+  #  Also NOT started by docker compose — start.sh runs it with
+  #  --network container:nr_ue so it shares the UE network namespace
+  #  and can send traffic through uesimtun0.
+  # ─────────────────────────────────────────────────────────────────────
   iot-traffic-generator:
     build: ./iot-traffic-generator
     container_name: iot-traffic-generator
     cap_add:
       - NET_ADMIN
-    networks:
-      - open5gs_net
-    depends_on:
-      - 5g-edge-node
+    environment:
+      - UE_TUNNEL_IFACE=uesimtun0
+      - TARGET_IP=192.168.100.1
     restart: unless-stopped
-
-
-#  NETWORK
-#  Joins the existing Open5GS Docker network so your containers can see 5G traffic
-#  Open5GS must be running BEFORE you run this
-
-networks:
-  open5gs_net:
-    external: true
-    name: docker_open5gs_default

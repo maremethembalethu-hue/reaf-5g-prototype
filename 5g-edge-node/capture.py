@@ -1,91 +1,124 @@
 
-#capture.py — Minimal Packet Capture
-
-
+# capture.py — REAF-5G Edge Node Stage 1 Real-time packet capture inside the UPF network namespace.
 
 import os
 import sys
 import logging
+import subprocess
 from datetime import datetime
+
+sys.stdout.reconfigure(line_buffering=True)
+
+import logging as _log
+_log.getLogger("scapy.runtime").setLevel(_log.ERROR)
+_log.getLogger("scapy.interactive").setLevel(_log.ERROR)
+_log.getLogger("scapy.loading").setLevel(_log.ERROR)
+
 from scapy.all import sniff, IP, TCP, UDP, ICMP
 
-#  Logging setup 
+#  Logging 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [EDGE-NODE] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
+    stream=sys.stdout
 )
 log = logging.getLogger(__name__)
 
-#  Configuration 
-# The network interface inside the Docker container. 'eth0' is the default, inside the container to find the correct name.
-INTERFACE = os.getenv("CAPTURE_INTERFACE", "eth0")
+#  Config 
+UE_SUBNET    = os.getenv("UE_SUBNET", "192.168.100.0/24")
+EVIDENCE_DIR = os.getenv("EVIDENCE_DIR", "/evidence")
+UE_PREFIX    = ".".join(UE_SUBNET.split(".")[:3])
 
-# Evidence folder mounted 
-EVIDENCE_DIR = "/evidence"
 
 #  Packet callback 
 def on_packet(packet):
-    #Called by Scapy for every packet that arrives on the network interface.
-    
     try:
-        timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")
-
-        # Only process IP packets for now
-        if IP not in packet:
+        if not packet.haslayer(IP):
             return
 
-        src_ip   = packet[IP].src
-        dst_ip   = packet[IP].dst
-        protocol = packet[IP].proto
+        ip_layer = packet[IP]
+        src = ip_layer.src
+        dst = ip_layer.dst
 
-        # Identify transport layer
+        if not (src.startswith(UE_PREFIX) or dst.startswith(UE_PREFIX)):
+            return
+
+        ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
         if TCP in packet:
-            transport = f"TCP  src_port={packet[TCP].sport} dst_port={packet[TCP].dport}"
-        elif UDP in packet:
-            transport = f"UDP  src_port={packet[UDP].sport} dst_port={packet[UDP].dport}"
-        elif ICMP in packet:
-            transport = f"ICMP type={packet[ICMP].type}"
-        else:
-            transport = f"PROTO={protocol}"
+            proto = (
+                f"TCP "
+                f"sport={packet[TCP].sport} "
+                f"dport={packet[TCP].dport} "
+                f"flags={packet[TCP].flags}"
+            )
+            label = "[!! RECON  ]" if int(packet[TCP].flags) == 0x02 else "[UE-TUNNEL ]"
 
-        log.info(f"PKT | {timestamp} | {src_ip} → {dst_ip} | {transport} | len={len(packet)}")
+        elif UDP in packet:
+            proto = f"UDP sport={packet[UDP].sport} dport={packet[UDP].dport}"
+            label = "[!! DDOS   ]" if packet[UDP].dport == 80 else "[UE-TUNNEL ]"
+
+        elif ICMP in packet:
+            proto = f"ICMP type={packet[ICMP].type}"
+            label = "[UE-TUNNEL ]"
+
+        else:
+            proto = f"PROTO={packet[IP].proto}"
+            label = "[UE-TUNNEL ]"
+
+        log.info(f"{label} {ts} | {src} → {dst} | {proto} | len={len(packet)}")
 
     except Exception as e:
-        log.error(f"Error processing packet: {e}")
+        log.error(f"Packet error: {e}")
 
 
-#  Main ─
+#  Main 
 def main():
     log.info("=" * 60)
     log.info("REAF-5G Edge Node — Stage 1: Packet Capture")
-    log.info(f"Interface  : {INTERFACE}")
-    log.info(f"Evidence   : {EVIDENCE_DIR}")
-    log.info("Status     : Waiting for traffic...")
+    log.info(f"Method    : tcpdump pipe → Scapy (TUN-compatible)")
+    log.info(f"UE filter : {UE_SUBNET}  (prefix: {UE_PREFIX}.*)")
+    log.info(f"Evidence  : {EVIDENCE_DIR}")
     log.info("=" * 60)
 
-    # Confirm evidence directory exists
-    os.makedirs(EVIDENCE_DIR, exist_ok=True)
+    for subdir in ["packets", "memory", "processes", "syslogs"]:
+        os.makedirs(os.path.join(EVIDENCE_DIR, subdir), exist_ok=True)
+
+    log.info("Starting tcpdump capture pipe...")
+
+    # tcpdump -i any    — capture on ALL interfaces including ogstun (TUN)
+    # -n                — do not resolve hostnames (faster)
+    # -U                — packet-buffered output (flush each packet immediately)
+    # -w -              — write raw pcap to stdout
+    # host 192.168.100  — BPF filter: only UE subnet packets
+    # 2>/dev/null       — suppress tcpdump startup messages
+    tcpdump = subprocess.Popen(
+    [
+        "tcpdump",
+        "-i", "any",
+        "-n",
+        "-U",
+        "-w", "-",
+        f"src net {UE_PREFIX}.0/24 or dst net {UE_PREFIX}.0/24" # Explicit directionality
+    ],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.DEVNULL
+    )
+
+    log.info("Waiting for traffic...")
 
     try:
-        # Start capturing this runs forever until stopped
-        # filter="ip" means only capture IP packets
-        # store=False means do not store packets in RAM 
-        # prn=on_packet means call on_packet() for every captured packet
+        # sniff reads raw pcap bytes from the pipe Scapy parses each packet and calls on_packet() This runs forever until tcpdump exits or is killed
         sniff(
-            iface=INTERFACE,
-            filter="ip",
+            offline=tcpdump.stdout,
             prn=on_packet,
             store=False
         )
-    except PermissionError:
-        log.error("Permission denied — container needs NET_ADMIN and privileged=true")
-        log.error("Check your docker-compose.yml cap_add and privileged settings")
-        sys.exit(1)
-    except OSError as e:
-        log.error(f"Interface '{INTERFACE}' not found: {e}")
-        log.error("Run 'ip link show' inside the container to list interfaces")
-        sys.exit(1)
+    except KeyboardInterrupt:
+        log.info("Stopping capture...")
+    finally:
+        tcpdump.terminate()
 
 
 if __name__ == "__main__":
