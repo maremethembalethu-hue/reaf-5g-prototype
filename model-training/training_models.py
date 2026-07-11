@@ -40,9 +40,13 @@ if not GPU_AVAILABLE:
     except Exception:
         pass
 
+
+
+
 # XGBoost >= 2.0 GPU config. If you're on xgboost < 2.0, use tree_method="gpu_hist" instead and drop the "device" key.
 XGB_TREE_METHOD = "hist"
 XGB_DEVICE = "cuda" if GPU_AVAILABLE else "cpu"
+
 
 # Opt-in only — see markdown above for why this defaults to False.
 USE_GPU_FOR_LITE = False
@@ -66,28 +70,37 @@ IDS2018_ROOT = Path("data/CSE-CIC-IDS2018")
 OUTPUT_DIR = Path("outputs")
 OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
 
+import os
+from pathlib import Path
+
+# root = CICIOT_ROOT
+# print("Top-level folders found on disk:")
+# for p in sorted(root.iterdir()):
+#     if p.is_dir():
+#         print(" ", p.name)
+
 # folder_name : (base_filename_without_suffix, num_files)
 CICIOT_MANIFEST = {
     "Backdoor_Malware":            ("Backdoor_Malware", 1),
-    "Benign_Final":                ("BenignTraffic", 5),
+    "Benign_Final":                ("BenignTraffic", 4),
     "BrowserHijacking":            ("BrowserHijacking", 1),
-    "CommandInjection":            ("CommandInjection", 13),
-    "DDOS-ACK_Fragmentation":      ("DDOS-ACK_Fragmentation", 1),
-    "DDOS-HTTP_Flood":             ("DDOS-HTTP_Flood", 1),
-    "DDOS-ICMP_Flood":             ("DDOS-ICMP_Flood", 27),
-    "DDOS-ICMP_Fragmentation":     ("DDOS-ICMP_Fragmentation", 20),
-    "DDOS-PSHACK_FLOOD":           ("DDOS-PSHACK_FLOOD", 16),
-    "DDOS-RSTFINFLOOD":            ("DDOS-RSTFINFLOOD", 15),
-    "DDOS-SlowLoris":              ("DDOS-SlowLoris", 1),
-    "DDOS-SYN_Flood":              ("DDOS-SYN_Flood", 16),
-    "DDOS-SynonymousIP_Flood":     ("DDOS-SynonymousIP_Flood", 14),
-    "DDOS-TCP_Flood":              ("DDOS-TCP_Flood", 18),
-    "DDOS-UDP_Flood":              ("DDOS-UDP_Flood", 21),
-    "DDOS-UDP_Fragmentation":      ("DDOS-UDP_Fragmentation", 13),
+    "CommandInjection":            ("CommandInjection", 1),
+    "DDoS-ACK_Fragmentation":      ("DDoS-ACK_Fragmentation", 13),
+    "DDoS-HTTP_Flood":             ("DDoS-HTTP_Flood-", 1),
+    "DDoS-ICMP_Flood":             ("DDoS-ICMP_Flood", 27),
+    "DDoS-ICMP_Fragmentation":     ("DDoS-ICMP_Fragmentation", 20),
+    "DDoS-PSHACK_FLOOD":           ("DDoS-PSHACK_Flood", 16),
+    "DDoS-RSTFINFLOOD":            ("DDoS-RSTFINFlood", 15),
+    "DDoS-SlowLoris":              ("DDoS-SlowLoris", 1),
+    "DDoS-SYN_Flood":              ("DDoS-SYN_Flood", 16),
+    "DDoS-SynonymousIP_Flood":     ("DDoS-SynonymousIP_Flood", 14),
+    "DDoS-TCP_Flood":              ("DDoS-TCP_Flood", 18),
+    "DDoS-UDP_Flood":              ("DDoS-UDP_Flood", 21),
+    "DDoS-UDP_Fragmentation":      ("DDoS-UDP_Fragmentation", 13),
     "DictionaryBruteForce":        ("DictionaryBruteForce", 1),
-    "DNS Spoofing":                ("DNS Spoofing", 1),
+    "DNS_Spoofing":                ("DNS_Spoofing", 1),
     "DoS-HTTP_Flood":              ("DoS-HTTP_Flood", 2),
-    "DOS-SYN_Flood":               ("DOS-SYN_Flood", 8),
+    "DoS-SYN_Flood":               ("DoS-SYN_Flood", 8),
     "DoS-TCP_Flood":               ("DoS-TCP_Flood", 11),
     "DoS-UDP_Flood":               ("DoS-UDP_Flood", 17),
     "Mirai-greeth_flood":          ("Mirai-greeth_flood", 29),
@@ -99,7 +112,7 @@ CICIOT_MANIFEST = {
     "Recon-PingSweep":             ("Recon-PingSweep", 1),
     "Recon-PortScan":              ("Recon-PortScan", 1),
     "SqlInjection":                ("SqlInjection", 1),
-    "Uploading Attack":            ("Uploading Attack", 1),
+    "Uploading_Attack":            ("Uploading_Attack", 1),
     "VulnerabilityScan":           ("VulnerabilityScan", 1),
     "XSS":                         ("XSS", 1),
 }
@@ -108,14 +121,14 @@ CICIOT_MANIFEST = {
 # and the coarse-grained classification task, following CICIoT2023 documentation.
 ATTACK_FAMILY_MAP = {
     "Backdoor_Malware": "Web", "BrowserHijacking": "Web", "CommandInjection": "Web",
-    "SqlInjection": "Web", "Uploading Attack": "Web", "XSS": "Web",
-    "DDOS-ACK_Fragmentation": "DDoS", "DDOS-HTTP_Flood": "DDoS", "DDOS-ICMP_Flood": "DDoS",
-    "DDOS-ICMP_Fragmentation": "DDoS", "DDOS-PSHACK_FLOOD": "DDoS", "DDOS-RSTFINFLOOD": "DDoS",
-    "DDOS-SlowLoris": "DDoS", "DDOS-SYN_Flood": "DDoS", "DDOS-SynonymousIP_Flood": "DDoS",
-    "DDOS-TCP_Flood": "DDoS", "DDOS-UDP_Flood": "DDoS", "DDOS-UDP_Fragmentation": "DDoS",
+    "SqlInjection": "Web", "Uploading_Attack": "Web", "XSS": "Web",
+    "DDoS-ACK_Fragmentation": "DDoS", "DDoS-HTTP_Flood": "DDoS", "DDoS-ICMP_Flood": "DDoS",
+    "DDoS-ICMP_Fragmentation": "DDoS", "DDoS-PSHACK_FLOOD": "DDoS", "DDoS-RSTFINFLOOD": "DDoS",
+    "DDoS-SlowLoris": "DDoS", "DDoS-SYN_Flood": "DDoS", "DDoS-SynonymousIP_Flood": "DDoS",
+    "DDoS-TCP_Flood": "DDoS", "DDoS-UDP_Flood": "DDoS", "DDoS-UDP_Fragmentation": "DDoS",
     "DictionaryBruteForce": "BruteForce",
-    "DNS Spoofing": "Spoofing", "MITM-ArpSpoofing": "Spoofing",
-    "DoS-HTTP_Flood": "DoS", "DOS-SYN_Flood": "DoS", "DoS-TCP_Flood": "DoS", "DoS-UDP_Flood": "DoS",
+    "DNS_Spoofing": "Spoofing", "MITM-ArpSpoofing": "Spoofing",
+    "DoS-HTTP_Flood": "DoS", "DoS-SYN_Flood": "DoS", "DoS-TCP_Flood": "DoS", "DoS-UDP_Flood": "DoS",
     "Mirai-greeth_flood": "Mirai", "Mirai-greip_flood": "Mirai", "Mirai-udpplain": "Mirai",
     "Recon-HostDiscovery": "Recon", "Recon-OSScan": "Recon", "Recon-PingSweep": "Recon",
     "Recon-PortScan": "Recon", "VulnerabilityScan": "Recon",
@@ -551,12 +564,22 @@ def plot_model_comparison(heavy_results, lite_results):
 def export_heavy_to_onnx(xgb_model, n_features, out_path):
     from onnxmltools import convert_xgboost
     from onnxmltools.convert.common.data_types import FloatTensorType
-    initial_type = [("input", FloatTensorType([None, n_features]))]
-    onnx_model = convert_xgboost(xgb_model, initial_types=initial_type)
-    with open(out_path, "wb") as f:
-        f.write(onnx_model.SerializeToString())
-    print(f"Heavy model exported to {out_path}")
 
+    booster = xgb_model.get_booster()
+    original_feature_names = booster.feature_names   # remember the real names
+    booster.feature_names = None   # forces XGBoost's dump to use the f0, f1, ... convention
+                                    # onnxmltools' converter actually expects
+
+    try:
+        initial_type = [("input", FloatTensorType([None, n_features]))]
+        onnx_model = convert_xgboost(xgb_model, initial_types=initial_type)
+        with open(out_path, "wb") as f:
+            f.write(onnx_model.SerializeToString())
+        print(f"Heavy model exported to {out_path}")
+    finally:
+        booster.feature_names = original_feature_names  # restore, so heavy_model still
+                                                          # works normally for predict()/
+                                                          # plot_feature_importance() afterward
 def export_lite_to_onnx(dt_model, n_features, out_path):
     from skl2onnx import convert_sklearn
     from skl2onnx.common.data_types import FloatTensorType
@@ -566,7 +589,19 @@ def export_lite_to_onnx(dt_model, n_features, out_path):
         f.write(onnx_model.SerializeToString())
     print(f"Lite model exported to {out_path}")
     
-
+def get_unique_path(path):
+    # Returns `path` unchanged if it doesn't exist yet. If it does, appends _1, _2, _3...
+   
+    path = Path(path)
+    if not path.exists():
+        return path
+    stem, suffix, parent = path.stem, path.suffix, path.parent
+    counter = 1
+    while True:
+        candidate = parent / f"{stem}_{counter}{suffix}"
+        if not candidate.exists():
+            return candidate
+        counter += 1
 def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials=20):
     # [Flow Feature Extraction Engine]
     ciciot_raw = load_ciciot2023(sample_frac=sample_frac_ciciot)
@@ -631,6 +666,13 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
 
     heavy_usable = harmonized_feature_set(heavy_features)
     lite_usable = harmonized_feature_set(lite_features)
+    
+    # Export to ONNX
+    heavy_onnx_path = get_unique_path(OUTPUT_DIR / "heavy_xgboost.onnx")
+    lite_onnx_path = get_unique_path(OUTPUT_DIR / "lite_decision_tree.onnx")
+
+    export_heavy_to_onnx(heavy_model, len(heavy_features), str(heavy_onnx_path))
+    export_lite_to_onnx(lite_model, len(lite_features), str(lite_onnx_path))
 
     plot_xgb_training_curve(heavy_evals)
     plot_confusion_matrix(heavy_model, test_h[heavy_features], test_h["y"], label_encoder.classes_, "HeavyNet (XGBoost)")
@@ -641,12 +683,14 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     heavy_results = evaluate_model(heavy_model, test_h[heavy_features], test_h["y"], label_encoder.classes_, "heavy_xgboost")
     lite_results = evaluate_model(lite_model, test_l[lite_features], test_l["y"], label_encoder.classes_, "lite_decision_tree")
     plot_model_comparison(heavy_results, lite_results)
+    
 
     return {
         "heavy_model": heavy_model, "lite_model": lite_model,
         "label_encoder": label_encoder,
         "heavy_scaler": heavy_scaler, "lite_scaler": lite_scaler,
-        "heavy_features": heavy_features, "lite_features": lite_features,   # <- add these
+        "heavy_features": heavy_features, "lite_features": lite_features,
+        "heavy_onnx_path": heavy_onnx_path, "lite_onnx_path": lite_onnx_path, 
         "test_h": test_h, "test_l": test_l,
         "ext_val": ext_val, "ext_test": ext_test, "ft": ft,
         "heavy_usable": heavy_usable, "lite_usable": lite_usable,
