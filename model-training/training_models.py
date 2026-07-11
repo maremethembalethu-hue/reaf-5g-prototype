@@ -393,14 +393,24 @@ def tune_heavy_model(X_train, y_train, X_val, y_val, num_class, n_trials=30):
     print("Best params:", study.best_params)
     return study.best_params
 
+def compute_sample_weights(y):
+    # Inverse-frequency sample weights (Almahaqeri et al., Eq. 6: N / (K * n_k)).
+    # XGBoost has no class_weight param.
+    counts = np.bincount(y)
+    N, K = len(y), len(counts)
+    class_weights = N / (K * counts)
+    return class_weights[y]
+
 def train_heavy_model(X_train, y_train, X_val, y_val, num_class, best_params):
     params = {**best_params, "objective": "multi:softprob", "num_class": num_class,
               "tree_method": XGB_TREE_METHOD, "device": XGB_DEVICE,
               "random_state": RANDOM_STATE, "n_jobs": -1,
               "eval_metric": ["mlogloss", "merror"]}
+    sample_weights = compute_sample_weights(y_train.values)
     t0 = time.perf_counter()
     model = xgb.XGBClassifier(**params)
-    model.fit(X_train, y_train, eval_set=[(X_train, y_train), (X_val, y_val)], verbose=False)
+    model.fit(X_train, y_train, sample_weight=sample_weights,
+              eval_set=[(X_train, y_train), (X_val, y_val)], verbose=False)
     print(f"Heavy model trained on device='{XGB_DEVICE}' in {time.perf_counter()-t0:.1f}s")
     return model, model.evals_result()
 
@@ -561,6 +571,71 @@ def plot_model_comparison(heavy_results, lite_results):
     plt.tight_layout()
     plt.show()
 
+def build_external_eval_matrix(ext_df, feature_list, ciciot_train_means, scaler):
+    # Aligns IDS2018 columns to the CICIoT2023 feature list the model was trained on. 
+    aligned, usable = project_ids2018_to_ciciot_names(ext_df, feature_list)
+    full = pd.DataFrame(index=aligned.index)
+    for f in feature_list:
+        full[f] = aligned[f] if f in aligned.columns else ciciot_train_means[f]
+    full = full[feature_list]  # enforce column order to match the fitted scaler
+    scaled = scaler.transform(full)
+    return pd.DataFrame(scaled, columns=feature_list, index=full.index)
+
+def label_to_binary(label_series, benign_labels):
+    return (~label_series.isin(benign_labels)).astype(int)
+
+def evaluate_indomain_binary(model, X_test, y_test, label_encoder, benign_class_name="Benign_Final", model_name="model"):
+    y_pred_class = model.predict(X_test)
+    benign_idx = list(label_encoder.classes_).index(benign_class_name)
+    y_true_bin = (y_test.values != benign_idx).astype(int)
+    y_pred_bin = (y_pred_class != benign_idx).astype(int)
+    acc = accuracy_score(y_true_bin, y_pred_bin)
+    p, r, f1, _ = precision_recall_fscore_support(y_true_bin, y_pred_bin, average="binary", zero_division=0)
+    return {"model": model_name, "accuracy": acc, "precision": p, "recall": r, "f1": f1}
+
+def evaluate_external_binary(model, ext_df, feature_list, scaler, ciciot_train_means,
+                              label_encoder, benign_labels, benign_class_name="Benign_Final",
+                              model_name="model"):
+    X_ext = build_external_eval_matrix(ext_df, feature_list, ciciot_train_means, scaler)
+    y_true = label_to_binary(ext_df["Label"].reset_index(drop=True), benign_labels)
+    y_pred_class = model.predict(X_ext)
+    benign_idx = list(label_encoder.classes_).index(benign_class_name)
+    y_pred = (y_pred_class != benign_idx).astype(int)
+
+    acc = accuracy_score(y_true, y_pred)
+    p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="binary", zero_division=0)
+    cm = confusion_matrix(y_true, y_pred)
+
+    print(f"\n=== {model_name} — external validation on IDS2018 (binary, approximate) ===")
+    print(json.dumps({"accuracy": acc, "precision": p, "recall": r, "f1": f1}, indent=2))
+
+    return {"model": model_name, "accuracy": acc, "precision": p, "recall": r, "f1": f1, "confusion_matrix": cm}
+def plot_external_confusion_matrix(result, model_name="model"):
+    fig, ax = plt.subplots(figsize=(5, 5))
+    disp = ConfusionMatrixDisplay(confusion_matrix=np.array(result["confusion_matrix"]),
+                                   display_labels=["Benign", "Attack"])
+    disp.plot(ax=ax, cmap="Oranges", colorbar=True)
+    ax.set_title(f"{model_name} — IDS2018 generalization (binary, approximate)")
+    plt.tight_layout()
+    plt.show()
+
+def plot_generalization_comparison(indomain_bin, external_bin, model_name="model"):
+    # Side-by-side in-domain vs. external performance
+    metrics = ["accuracy", "precision", "recall", "f1"]
+    in_vals = [indomain_bin[m] for m in metrics]
+    ext_vals = [external_bin[m] for m in metrics]
+    x = np.arange(len(metrics)); width = 0.35
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.bar(x - width/2, in_vals, width, label="In-domain (CICIoT2023 test)")
+    ax.bar(x + width/2, ext_vals, width, label="External (IDS2018, approximate)")
+    ax.set_xticks(x); ax.set_xticklabels(metrics)
+    ax.set_ylim(0, 1)
+    ax.set_title(f"{model_name} — in-domain vs. external generalization (binary)")
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+    
+    
 def export_heavy_to_onnx(xgb_model, n_features, out_path):
     from onnxmltools import convert_xgboost
     from onnxmltools.convert.common.data_types import FloatTensorType
@@ -670,6 +745,31 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     # Export to ONNX
     heavy_onnx_path = get_unique_path(OUTPUT_DIR / "heavy_xgboost.onnx")
     lite_onnx_path = get_unique_path(OUTPUT_DIR / "lite_decision_tree.onnx")
+    
+    
+    
+    # Genuine unseen-data test: external validation on IDS2018
+    benign_labels = {"Benign", "BENIGN", "benign"}  
+
+    heavy_train_means = train[heavy_features].mean()
+    lite_train_means = train[lite_features].mean()
+
+    heavy_indomain_bin = evaluate_indomain_binary(heavy_model, test_h[heavy_features], test_h["y"],
+                                                    label_encoder, model_name="HeavyNet (XGBoost)")
+    lite_indomain_bin = evaluate_indomain_binary(lite_model, test_l[lite_features], test_l["y"],
+                                                   label_encoder, model_name="LiteNet (Decision Tree)")
+
+    heavy_external_bin = evaluate_external_binary(heavy_model, ext_test, heavy_features, heavy_scaler,
+                                                    heavy_train_means, label_encoder, benign_labels,
+                                                    model_name="HeavyNet (XGBoost)")
+    lite_external_bin = evaluate_external_binary(lite_model, ext_test, lite_features, lite_scaler,
+                                                   lite_train_means, label_encoder, benign_labels,
+                                                   model_name="LiteNet (Decision Tree)")
+
+    plot_external_confusion_matrix(heavy_external_bin, "HeavyNet (XGBoost)")
+    plot_external_confusion_matrix(lite_external_bin, "LiteNet (Decision Tree)")
+    plot_generalization_comparison(heavy_indomain_bin, heavy_external_bin, "HeavyNet (XGBoost)")
+    plot_generalization_comparison(lite_indomain_bin, lite_external_bin, "LiteNet (Decision Tree)")
 
     export_heavy_to_onnx(heavy_model, len(heavy_features), str(heavy_onnx_path))
     export_lite_to_onnx(lite_model, len(lite_features), str(lite_onnx_path))
