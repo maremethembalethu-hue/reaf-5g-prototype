@@ -192,6 +192,24 @@ def load_ciciot2023(manifest=CICIOT_MANIFEST, root=CICIOT_ROOT, usecols=None, sa
     print(f"Total rows loaded: {len(full):,}")
     return full
 
+def load_ciciot2023_floored(manifest=CICIOT_MANIFEST, root=CICIOT_ROOT, usecols=None,
+                             sample_frac=0.02, min_per_class=1000):
+    # Same loading logic as load_ciciot2023, but guarantees at least min_per_class rows survive sampling for classes small enough that sample_frac alone would gut them
+  
+    all_frames = []
+    for cls, (base, n) in manifest.items():
+        print(f"Loading class: {cls:30s} ({n} file(s))")
+        df_cls = load_ciciot_class(cls, cls, base, n, root, usecols, sample_frac=None)
+        if len(df_cls) == 0:
+            print(f"[WARN] 0 rows loaded for class {cls} — check manifest/files")
+            continue
+        target_n = max(min_per_class, int(len(df_cls) * sample_frac))
+        target_n = min(target_n, len(df_cls))
+        df_cls = df_cls.sample(n=target_n, random_state=RANDOM_STATE)
+        all_frames.append(df_cls)
+    full = pd.concat(all_frames, ignore_index=True)
+    print(f"Total rows loaded: {len(full):,}")
+    return full
 IDS2018_FILES = [
     "Bot.csv", "Brute Force -Web.csv", "Brute Force -XSS.csv",
     "DDOS attack-HOIC.csv", "DDOS attack-LOIC-UDP.csv", "DDoS attacks-LOIC-HTTP.csv",
@@ -571,14 +589,15 @@ def plot_model_comparison(heavy_results, lite_results):
     plt.tight_layout()
     plt.show()
 
-def build_external_eval_matrix(ext_df, feature_list, ciciot_train_means, scaler):
-    # Aligns IDS2018 columns to the CICIoT2023 feature list the model was trained on. 
+def build_external_eval_matrix(ext_df, feature_list, ciciot_train_means, scaler, clip_std=5.0):
+    # Aligns IDS2018 columns to the CICIoT2023 feature list the model was trained on.
     aligned, usable = project_ids2018_to_ciciot_names(ext_df, feature_list)
     full = pd.DataFrame(index=aligned.index)
     for f in feature_list:
         full[f] = aligned[f] if f in aligned.columns else ciciot_train_means[f]
     full = full[feature_list]  # enforce column order to match the fitted scaler
     scaled = scaler.transform(full)
+    scaled = np.clip(scaled, -clip_std, clip_std)  # caps unit-mismatch outliers  that were driving both models to predict "Attack" for every single row last run
     return pd.DataFrame(scaled, columns=feature_list, index=full.index)
 
 def label_to_binary(label_series, benign_labels):
@@ -677,9 +696,10 @@ def get_unique_path(path):
         if not candidate.exists():
             return candidate
         counter += 1
-def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials=20):
+        
+def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials=20, min_per_class=1000):
     # [Flow Feature Extraction Engine]
-    ciciot_raw = load_ciciot2023(sample_frac=sample_frac_ciciot)
+    ciciot_raw = load_ciciot2023_floored(sample_frac=sample_frac_ciciot, min_per_class=min_per_class)
     ciciot_raw = normalize_columns(ciciot_raw)
     ids2018_raw = load_ids2018(sample_frac=sample_frac_ids2018)
 
@@ -691,8 +711,7 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     # Splits
     train, val, test = split_ciciot(ciciot)
     ft, ext_val, ext_test = split_ids2018(ids2018)
-    # print(sorted(ciciot.columns.tolist()))
-    # print(sorted(ids2018.columns.tolist()))
+
     # Target encoding
     label_encoder = LabelEncoder()
     train = train.copy(); val = val.copy(); test = test.copy()
@@ -701,17 +720,14 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     test["y"] = label_encoder.transform(test["Label"])
     num_class = len(label_encoder.classes_)
 
-    # Scaling (train-only fit)
-    # heavy_scaler = fit_scaler(train, HEAVY_FEATURES)
-    # lite_scaler = fit_scaler(train, LITE_FEATURES)
-
+    # Feature resolution (handles schema differences across CICIoT2023 redistributions)
     heavy_features, heavy_missing = resolve_feature_set(train, HEAVY_FEATURES, "HEAVY_FEATURES")
     lite_features, lite_missing = resolve_feature_set(train, LITE_FEATURES, "LITE_FEATURES")
-    
     if heavy_missing or lite_missing:
         print("\n[RESEARCH NOTE] This data pull does not match the full 47-column CICIoT2023 "
-              "schema referenced in the design." )
-    
+              "schema referenced in the design.")
+
+    # Scaling (train-only fit)
     heavy_scaler = fit_scaler(train, heavy_features)
     lite_scaler = fit_scaler(train, lite_features)
 
@@ -723,6 +739,7 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     val_l = apply_scaler(val, lite_features, lite_scaler)
     test_l = apply_scaler(test, lite_features, lite_scaler)
 
+    # [XGBoost Model (Heavy)] — GPU-accelerated, inverse-frequency sample weighted
     best_params = tune_heavy_model(train_h[heavy_features], train_h["y"],
                                     val_h[heavy_features], val_h["y"],
                                     num_class, n_trials=optuna_trials)
@@ -730,26 +747,36 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
                                                   val_h[heavy_features], val_h["y"],
                                                   num_class, best_params)
 
+    # [Decision Tree (Lite)]
     lite_model = train_lite_model(train_l[lite_features], train_l["y"])
 
+    # In-domain evaluation — called exactly once per model, reused for every plot below
     print("\n Heavy model (CICIoT2023 test):")
-    evaluate_model(heavy_model, test_h[heavy_features], test_h["y"],
-                    label_names=label_encoder.classes_, model_name="heavy_xgboost")
+    heavy_results = evaluate_model(heavy_model, test_h[heavy_features], test_h["y"],
+                                    label_names=label_encoder.classes_, model_name="heavy_xgboost")
     print("\nLite model (CICIoT2023 test):")
-    evaluate_model(lite_model, test_l[lite_features], test_l["y"],
-                    label_names=label_encoder.classes_, model_name="lite_decision_tree")
+    lite_results = evaluate_model(lite_model, test_l[lite_features], test_l["y"],
+                                   label_names=label_encoder.classes_, model_name="lite_decision_tree")
 
+    # In-domain plots
+    plot_xgb_training_curve(heavy_evals)
+    plot_confusion_matrix(heavy_model, test_h[heavy_features], test_h["y"], label_encoder.classes_, "HeavyNet (XGBoost)")
+    plot_confusion_matrix(lite_model, test_l[lite_features], test_l["y"], label_encoder.classes_, "LiteNet (Decision Tree)")
+    plot_feature_importance(heavy_model, heavy_features, "HeavyNet (XGBoost)")
+    plot_feature_importance(lite_model, lite_features, "LiteNet (Decision Tree)")
+    plot_learning_curve(DecisionTreeClassifier(**LITE_PARAMS), train_l[lite_features], train_l["y"], "LiteNet (Decision Tree)")
+    plot_model_comparison(heavy_results, lite_results)
+
+    # [Genuine unseen-data test: external validation on IDS2018]
     heavy_usable = harmonized_feature_set(heavy_features)
     lite_usable = harmonized_feature_set(lite_features)
-    
-    # Export to ONNX
-    heavy_onnx_path = get_unique_path(OUTPUT_DIR / "heavy_xgboost.onnx")
-    lite_onnx_path = get_unique_path(OUTPUT_DIR / "lite_decision_tree.onnx")
-    
-    
-    
-    # Genuine unseen-data test: external validation on IDS2018
-    benign_labels = {"Benign", "BENIGN", "benign"}  
+
+    actual_labels = ids2018["Label"].unique()
+    print("\nIDS2018 unique label values:", sorted(str(l) for l in actual_labels))
+    benign_labels = {l for l in actual_labels if str(l).strip().lower() == "benign"}
+    if not benign_labels:
+        print("[WARN] No IDS2018 label matched 'benign' after case-insensitive check — "
+              "inspect actual_labels above and set benign_labels manually.")
 
     heavy_train_means = train[heavy_features].mean()
     lite_train_means = train[lite_features].mean()
@@ -771,30 +798,35 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     plot_generalization_comparison(heavy_indomain_bin, heavy_external_bin, "HeavyNet (XGBoost)")
     plot_generalization_comparison(lite_indomain_bin, lite_external_bin, "LiteNet (Decision Tree)")
 
-    export_heavy_to_onnx(heavy_model, len(heavy_features), str(heavy_onnx_path))
-    export_lite_to_onnx(lite_model, len(lite_features), str(lite_onnx_path))
-
-    plot_xgb_training_curve(heavy_evals)
-    plot_confusion_matrix(heavy_model, test_h[heavy_features], test_h["y"], label_encoder.classes_, "HeavyNet (XGBoost)")
-    plot_confusion_matrix(lite_model, test_l[lite_features], test_l["y"], label_encoder.classes_, "LiteNet (Decision Tree)")
-    plot_feature_importance(heavy_model, heavy_features, "HeavyNet (XGBoost)")
-    plot_feature_importance(lite_model, lite_features, "LiteNet (Decision Tree)")
-    plot_learning_curve(DecisionTreeClassifier(**LITE_PARAMS), train_l[lite_features], train_l["y"], "LiteNet (Decision Tree)")
-    heavy_results = evaluate_model(heavy_model, test_h[heavy_features], test_h["y"], label_encoder.classes_, "heavy_xgboost")
-    lite_results = evaluate_model(lite_model, test_l[lite_features], test_l["y"], label_encoder.classes_, "lite_decision_tree")
-    plot_model_comparison(heavy_results, lite_results)
-    
+    # [Block: Export to ONNX]
+    heavy_onnx_path = get_unique_path(OUTPUT_DIR / "heavy_xgboost.onnx")
+    lite_onnx_path = get_unique_path(OUTPUT_DIR / "lite_decision_tree.onnx")
+    try:
+        export_heavy_to_onnx(heavy_model, len(heavy_features), str(heavy_onnx_path))
+    except Exception as e:
+        print(f"[WARN] Heavy ONNX export failed: {e}")
+        heavy_onnx_path = None
+    try:
+        export_lite_to_onnx(lite_model, len(lite_features), str(lite_onnx_path))
+    except Exception as e:
+        print(f"[WARN] Lite ONNX export failed: {e}")
+        lite_onnx_path = None
 
     return {
         "heavy_model": heavy_model, "lite_model": lite_model,
         "label_encoder": label_encoder,
         "heavy_scaler": heavy_scaler, "lite_scaler": lite_scaler,
         "heavy_features": heavy_features, "lite_features": lite_features,
-        "heavy_onnx_path": heavy_onnx_path, "lite_onnx_path": lite_onnx_path, 
+        "heavy_onnx_path": heavy_onnx_path, "lite_onnx_path": lite_onnx_path,
+        "heavy_results": heavy_results, "lite_results": lite_results,
+        "heavy_indomain_bin": heavy_indomain_bin, "lite_indomain_bin": lite_indomain_bin,
+        "heavy_external_bin": heavy_external_bin, "lite_external_bin": lite_external_bin,
         "test_h": test_h, "test_l": test_l,
         "ext_val": ext_val, "ext_test": ext_test, "ft": ft,
         "heavy_usable": heavy_usable, "lite_usable": lite_usable,
     }
 
 
-results = run_pipeline(sample_frac_ciciot=0.02, sample_frac_ids2018=0.2, optuna_trials=10)
+results = run_pipeline(sample_frac_ciciot=0.02, sample_frac_ids2018=0.2, optuna_trials=10, min_per_class=1000)
+
+
