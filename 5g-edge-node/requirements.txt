@@ -1,2 +1,6 @@
 scapy==2.5.0
 psutil==5.9.8
+onnxruntime==1.17.0
+numpy==1.26.4
+cryptography==42.0.0
+rfc3161ng==2.1.3
