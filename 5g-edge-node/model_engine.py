@@ -9,7 +9,7 @@ import logging
 import numpy as np
 import onnxruntime as ort
 
-from feature_extractor import extract_heavy, extract_lite
+from feature_extraction import extract_heavy, extract_lite
 from resource_monitor import get_model_tier, get_metrics
 
 log = logging.getLogger(__name__)

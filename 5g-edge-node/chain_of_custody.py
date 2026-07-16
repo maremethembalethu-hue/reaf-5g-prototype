@@ -1,5 +1,3 @@
-
-# chain_of_custody.py
 # Computes SHA-256 hash of each evidence bundle,
 # appends a tamper-evident entry to the chain-of-custody log,
 # and digitally signs the entry.

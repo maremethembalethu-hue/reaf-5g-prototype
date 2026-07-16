@@ -1,11 +1,16 @@
 
-# capture.py — REAF-5G Edge Node Stage 1 Real-time packet capture inside the UPF network namespace.
+# REAF-5G Edge Node Stage 1 Real-time packet capture inside the UPF network namespace.
 
 import os
 import sys
 import logging
 import subprocess
 from datetime import datetime
+
+# For the model engine class
+from model_engine import classify_packet
+from trigger import should_acquire
+from evidence_collector import collect_evidence
 
 sys.stdout.reconfigure(line_buffering=True)
 
@@ -53,7 +58,16 @@ def on_packet(packet):
                 f"dport={packet[TCP].dport} "
                 f"flags={packet[TCP].flags}"
             )
-            label = "[!! RECON  ]" if int(packet[TCP].flags) == 0x02 else "[UE-TUNNEL ]"
+            # Classifying the packet from the model_engine
+            result = classify_packet(packet)
+            label       = result["label"]
+            confidence  = result["confidence"]
+            attack_type = result["attack_type"]
+
+            log.info(f"{label} {ts} | {src} → {dst} | {proto} | conf={confidence:.3f} | len={len(packet)}")
+
+            if should_acquire(attack_type, confidence):
+                collect_evidence(packet, result, ts)
 
         elif UDP in packet:
             proto = f"UDP sport={packet[UDP].sport} dport={packet[UDP].dport}"
@@ -75,12 +89,12 @@ def on_packet(packet):
 
 #  Main 
 def main():
-    log.info("=" * 60)
-    log.info("REAF-5G Edge Node — Stage 1: Packet Capture")
-    log.info(f"Method    : tcpdump pipe → Scapy (TUN-compatible)")
+   
+    log.info("REAF-5G Edge Node: Packet Capture")
+    log.info(f"Method    : tcpdump pipe: Scapy")
     log.info(f"UE filter : {UE_SUBNET}  (prefix: {UE_PREFIX}.*)")
     log.info(f"Evidence  : {EVIDENCE_DIR}")
-    log.info("=" * 60)
+
 
     for subdir in ["packets", "memory", "processes", "syslogs"]:
         os.makedirs(os.path.join(EVIDENCE_DIR, subdir), exist_ok=True)

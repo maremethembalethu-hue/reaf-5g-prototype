@@ -57,7 +57,7 @@ def _extract_base(packet):
     f["Header_Length"] = ip.ihl * 4      # IP header length in bytes
     f["Protocol Type"] = ip.proto        # 6=TCP, 17=UDP, 1=ICMP
     f["Tot sum"]       = pkt_len
-    f["Min"]           = pkt_len         # single packet — min=max=avg
+    f["Min"]           = pkt_len         # single packet: min=max=avg
     f["Max"]           = pkt_len
     f["AVG"]           = pkt_len
 
@@ -92,7 +92,7 @@ def _extract_base(packet):
         f["ack_flag_number"] = 1.0 if flags & 0x10 else 0.0
         f["ece_flag_number"] = 1.0 if flags & 0x40 else 0.0
         f["cwr_flag_number"] = 1.0 if flags & 0x80 else 0.0
-        # Cumulative counts (same as flag presence for single packet)
+        # Cumulative counts, same as flag presence for single packet
         f["syn_count"] = f["syn_flag_number"]
         f["ack_count"] = f["ack_flag_number"]
         f["fin_count"] = f["fin_flag_number"]

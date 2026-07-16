@@ -1,7 +1,4 @@
-
-# evidence_collector.py
 # Captures all four evidence layers when an attack is detected.
-
 
 import os
 import json

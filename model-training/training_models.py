@@ -747,7 +747,7 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
                                                   val_h[heavy_features], val_h["y"],
                                                   num_class, best_params)
 
-    # [Decision Tree (Lite)]
+    # Decision Tree (Lite)
     lite_model = train_lite_model(train_l[lite_features], train_l["y"])
 
     # In-domain evaluation — called exactly once per model, reused for every plot below

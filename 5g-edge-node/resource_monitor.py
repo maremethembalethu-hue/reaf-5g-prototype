@@ -5,15 +5,14 @@
 
 import psutil
 
-CPU_HIGH_THRESHOLD = 50.0   # percent — above this use Heavy Model
-RAM_HIGH_THRESHOLD = 70.0   # percent — above this fall back to Lite
+CPU_HIGH_THRESHOLD = 50.0   # percent, above this use Heavy Model
+RAM_HIGH_THRESHOLD = 70.0   # percent, above this fall back to Lite
 
 
 def get_model_tier():
     
     # Returns 'heavy' or 'lite' based on current resource usage.
    
-    
     cpu = psutil.cpu_percent(interval=0.1)
     ram = psutil.virtual_memory().percent
 

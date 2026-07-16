@@ -1,9 +1,5 @@
-# replay_engine.py — REAF-5G PCAP Replay Engine
-#
-# Loads a captured PCAP, rewrites its addresses onto the live Open5GS lab
-# (UE tunnel -> gNB -> UPF -> ogstun), reproduces the original inter-packet
-# timing, and sends each packet out through uesimtun0.
-#
+
+# Loads a captured PCAP, rewrites its addresses onto the live Open5GS lab, reproduces the original inter-packet timing, and sends each packet out through uesimtun0.
 
 import os
 import time

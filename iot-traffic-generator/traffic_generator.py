@@ -1,12 +1,6 @@
-# traffic_generator.py — REAF-5G IoT Traffic Generator / Orchestrator
 # Runs inside nr_ue network namespace so it shares uesimtun0 with the UE container.
-# Packets sent through uesimtun0 are GTP-U encapsulated by the gNB and decapsulated
-# by the UPF onto ogstun where the forensic agent captures them.
-#
-# MODE=synthetic (default) — original Stage 1 behaviour, unchanged.
-# MODE=replay    — replay one PCAP via replay_engine.py (set PCAP_PATH).
-# MODE=mixed     — replay a fixed benign/recon/ddos/benign sequence.
-# MODE=random    — replay a random PCAP from PCAP_DIR.
+# Packets sent through uesimtun0 are GTP-U encapsulated by the gNB and decapsulated by the UPF onto ogstun where the forensic agent captures them.
+
 
 import os
 import sys
