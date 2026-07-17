@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 EVIDENCE_DIR = os.getenv("EVIDENCE_DIR", "/evidence")
 
 
-def collect_evidence(packet, result: dict, timestamp: str):
+def collect_evidence(packets, result: dict, timestamp: str):
     
     # Called when trigger.py fires.
     # Collects all four evidence layers and preserves them.
@@ -29,16 +29,16 @@ def collect_evidence(packet, result: dict, timestamp: str):
 
     paths = {}
 
-    #  Layer 1: Network ─
+    #  Layer 1: Network 
     pcap_path = os.path.join(bundle_dir, "network_capture.pcap")
     try:
-        wrpcap(pcap_path, [packet])
+        wrpcap(pcap_path, packets)
         paths["network"] = pcap_path
         log.info(f"  [1/4] Network layer saved: {pcap_path}")
     except Exception as e:
         log.error(f"  [1/4] Network capture failed: {e}")
 
-    #  Layer 2: Process ─
+    #  Layer 2: Process 
     proc_path = os.path.join(bundle_dir, "processes.json")
     try:
         processes = []
@@ -76,7 +76,7 @@ def collect_evidence(packet, result: dict, timestamp: str):
     except Exception as e:
         log.error(f"  [3/4] Memory capture failed: {e}")
 
-    #  Layer 4: System logs ─
+    #  Layer 4: System logs 
     syslog_path = os.path.join(bundle_dir, "syslog.txt")
     try:
         result_proc = subprocess.run(
@@ -99,12 +99,13 @@ def collect_evidence(packet, result: dict, timestamp: str):
         "model_used":   result["model_used"],
         "cpu_percent":  result["cpu_percent"],
         "ram_percent":  result["ram_percent"],
+        "packet_count": len(packets),
         "evidence_files": paths
     }
     meta_path = os.path.join(bundle_dir, "metadata.json")
     with open(meta_path, "w") as f:
         json.dump(meta, f, indent=2)
 
-    #  Chain of custody ─
+    #  Chain of custody
     preserve_bundle(bundle_dir, meta)
     log.info(f"EVIDENCE ACQUISITION COMPLETE | incident={incident_id}")

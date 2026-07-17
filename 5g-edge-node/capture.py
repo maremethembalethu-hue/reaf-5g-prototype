@@ -5,12 +5,13 @@ import os
 import sys
 import logging
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 
-# For the model engine class
-from model_engine import classify_packet
+
+from flow_builder import FlowTable
+from model_engine import classify_flow
 from trigger import should_acquire
-from evidence_collector import collect_evidence
+from evidence_collect import collect_evidence
 
 sys.stdout.reconfigure(line_buffering=True)
 
@@ -35,57 +36,36 @@ UE_SUBNET    = os.getenv("UE_SUBNET", "192.168.100.0/24")
 EVIDENCE_DIR = os.getenv("EVIDENCE_DIR", "/evidence")
 UE_PREFIX    = ".".join(UE_SUBNET.split(".")[:3])
 
+flow_table = FlowTable()
 
-#  Packet callback 
-def on_packet(packet):
-    try:
-        if not packet.haslayer(IP):
-            return
+def _handle_finished_flow(flow):
+    result = classify_flow(flow)
 
-        ip_layer = packet[IP]
-        src = ip_layer.src
-        dst = ip_layer.dst
+    ts = datetime.now(timezone.utc).isoformat()
+    n_pkts = flow["packet_count"]
+    duration = flow["last_time"] - flow["start_time"]
+    log.info(
+        f"{result['label']} {ts} | flow of {n_pkts} pkts over {duration:.2f}s | "
+        f"proto={flow['proto']} | attack={result['attack_type']} | "
+        f"conf={result['confidence']:.3f} | model={result['model_used']}"
+    )
 
-        if not (src.startswith(UE_PREFIX) or dst.startswith(UE_PREFIX)):
-            return
+    if should_acquire(result["attack_type"], result["confidence"]):
+        collect_evidence(flow["packets"], result, ts)
 
-        ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
-        if TCP in packet:
-            proto = (
-                f"TCP "
-                f"sport={packet[TCP].sport} "
-                f"dport={packet[TCP].dport} "
-                f"flags={packet[TCP].flags}"
-            )
-            # Classifying the packet from the model_engine
-            result = classify_packet(packet)
-            label       = result["label"]
-            confidence  = result["confidence"]
-            attack_type = result["attack_type"]
+def on_packet(pkt):
+    if IP not in pkt:
+        return
 
-            log.info(f"{label} {ts} | {src} → {dst} | {proto} | conf={confidence:.3f} | len={len(packet)}")
+    finished = flow_table.add_packet(pkt, ts=time.time())
+    if finished is not None:
+        _handle_finished_flow(finished)
 
-            if should_acquire(attack_type, confidence):
-                collect_evidence(packet, result, ts)
-
-        elif UDP in packet:
-            proto = f"UDP sport={packet[UDP].sport} dport={packet[UDP].dport}"
-            label = "[!! DDOS   ]" if packet[UDP].dport == 80 else "[UE-TUNNEL ]"
-
-        elif ICMP in packet:
-            proto = f"ICMP type={packet[ICMP].type}"
-            label = "[UE-TUNNEL ]"
-
-        else:
-            proto = f"PROTO={packet[IP].proto}"
-            label = "[UE-TUNNEL ]"
-
-        log.info(f"{label} {ts} | {src} → {dst} | {proto} | len={len(packet)}")
-
-    except Exception as e:
-        log.error(f"Packet error: {e}")
-
+    # Cheap to check every packet at lab-scale traffic volumes; finalizes any
+    # flow that has gone idle even if it never hit the packet-count threshold.
+    for stale_flow in flow_table.expire_stale_flows():
+        _handle_finished_flow(stale_flow)
 
 #  Main 
 def main():

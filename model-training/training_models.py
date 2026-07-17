@@ -590,14 +590,13 @@ def plot_model_comparison(heavy_results, lite_results):
     plt.show()
 
 def build_external_eval_matrix(ext_df, feature_list, ciciot_train_means, scaler, clip_std=5.0):
-    # Aligns IDS2018 columns to the CICIoT2023 feature list the model was trained on.
     aligned, usable = project_ids2018_to_ciciot_names(ext_df, feature_list)
     full = pd.DataFrame(index=aligned.index)
     for f in feature_list:
         full[f] = aligned[f] if f in aligned.columns else ciciot_train_means[f]
-    full = full[feature_list]  # enforce column order to match the fitted scaler
+    full = full[feature_list]
     scaled = scaler.transform(full)
-    scaled = np.clip(scaled, -clip_std, clip_std)  # caps unit-mismatch outliers  that were driving both models to predict "Attack" for every single row last run
+    scaled = np.clip(scaled, -clip_std, clip_std)
     return pd.DataFrame(scaled, columns=feature_list, index=full.index)
 
 def label_to_binary(label_series, benign_labels):
@@ -828,5 +827,29 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
 
 
 results = run_pipeline(sample_frac_ciciot=0.02, sample_frac_ids2018=0.2, optuna_trials=10, min_per_class=1000)
+
+import joblib
+
+label_pkl_path = get_unique_path(OUTPUT_DIR / "label_encoder.pkl")
+try:
+    joblib.dump(results["label_encoder"], OUTPUT_DIR / "label_encoder.pkl")
+except Exception as e:
+    print(f"[WARN] Label_encoder pkl export failed: {e}")
+    label_pkl_path = None
+
+heavy_scaler_pkl_path = get_unique_path(OUTPUT_DIR / "heavy_scaler.pkl")
+try:
+    joblib.dump(results["heavy_scaler"], OUTPUT_DIR / "heavy_scaler.pkl")
+except Exception as e:
+    print(f"[WARN] Heavy_scaler pkl export failed: {e}")
+    heavy_scaler_pkl_path = None
+    
+lite_scaler_pkl_path = get_unique_path(OUTPUT_DIR / "lite_scaler.pkl")
+try:
+    joblib.dump(results["lite_scaler"], OUTPUT_DIR / "lite_scaler.pkl")
+except Exception as e:
+    print(f"[WARN] Lite scaler pkl export failed: {e}")
+    lite_scaler_pkl_path = None
+
 
 
