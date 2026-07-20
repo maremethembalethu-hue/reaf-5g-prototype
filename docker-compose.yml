@@ -1,19 +1,13 @@
 services:
-
-  # ─────────────────────────────────────────────────────────────────────
+ 
   #  5G EDGE NODE
   #  Runs inside the UPF network namespace so it can see ogstun traffic.
-  #  This is NOT started by docker compose up — start.sh runs it
-  #  manually with --network container:upf so it shares the UPF
-  #  network namespace directly.
-  #
-  #  If you want to start it standalone for development only:
-  #    docker compose up --build 5g-edge-node
-  #  But for full system use start.sh instead.
-  # ─────────────────────────────────────────────────────────────────────
+ 
+  
   5g-edge-node:
     build: ./5g-edge-node
     container_name: 5g-edge-node
+    network_mode: "container:upf"
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
@@ -21,8 +15,10 @@ services:
     volumes:
       - ./evidence:/evidence
     environment:
-      - CAPTURE_INTERFACE=any
+      - CAPTURE_IFACE=ogstun
+      - EVIDENCE_DIR=/evidence
       - UE_SUBNET=192.168.100.0/24
+      - USE_RFC3161=false
     restart: unless-stopped
     deploy:
       resources:
@@ -33,18 +29,19 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  # ─────────────────────────────────────────────────────────────────────
+  
   #  IOT TRAFFIC GENERATOR
-  #  Also NOT started by docker compose — start.sh runs it with
-  #  --network container:nr_ue so it shares the UE network namespace
-  #  and can send traffic through uesimtun0.
-  # ─────────────────────────────────────────────────────────────────────
+  # container:nr_ue" attaches this container to the UE's network namespace so it shares uesimtun0.
   iot-traffic-generator:
     build: ./iot-traffic-generator
-    container_name: iot-traffic-generator
+    container_name: reaf-traffic
+    network_mode: "container:nr_ue"
     cap_add:
       - NET_ADMIN
     environment:
       - UE_TUNNEL_IFACE=uesimtun0
-      - TARGET_IP=192.168.100.1
+      - TARGET_IP=${TARGET_IP:-192.168.100.1}
+      - MODE=${MODE:-synthetic}
+      - SEND_INTERVAL=2
+      - REPLAY_SPEED=1.0
     restart: unless-stopped

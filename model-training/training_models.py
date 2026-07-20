@@ -683,7 +683,7 @@ def export_lite_to_onnx(dt_model, n_features, out_path):
     print(f"Lite model exported to {out_path}")
     
 def get_unique_path(path):
-    # Returns `path` unchanged if it doesn't exist yet. If it does, appends _1, _2, _3...
+    # Returns `path` unchanged if it doesn't exist yet. If it does, appends 
    
     path = Path(path)
     if not path.exists():
@@ -697,12 +697,12 @@ def get_unique_path(path):
         counter += 1
         
 def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials=20, min_per_class=1000):
-    # [Flow Feature Extraction Engine]
+    # Flow Feature Extraction Engine
     ciciot_raw = load_ciciot2023_floored(sample_frac=sample_frac_ciciot, min_per_class=min_per_class)
     ciciot_raw = normalize_columns(ciciot_raw)
     ids2018_raw = load_ids2018(sample_frac=sample_frac_ids2018)
 
-    # [Data Cleaning & Normalization Module] + [Common Feature Processing Layer]
+    # Data Cleaning & Normalization Module + Common Feature Processing Layer
     ciciot = clean_dataframe(ciciot_raw)
     ciciot, proto_encoder = encode_protocol(ciciot)
     ids2018 = clean_dataframe(ids2018_raw)
@@ -738,7 +738,7 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     val_l = apply_scaler(val, lite_features, lite_scaler)
     test_l = apply_scaler(test, lite_features, lite_scaler)
 
-    # [XGBoost Model (Heavy)] — GPU-accelerated, inverse-frequency sample weighted
+    # XGBoost Model (Heavy): GPU-accelerated, inverse-frequency sample weighted
     best_params = tune_heavy_model(train_h[heavy_features], train_h["y"],
                                     val_h[heavy_features], val_h["y"],
                                     num_class, n_trials=optuna_trials)
@@ -766,7 +766,7 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     plot_learning_curve(DecisionTreeClassifier(**LITE_PARAMS), train_l[lite_features], train_l["y"], "LiteNet (Decision Tree)")
     plot_model_comparison(heavy_results, lite_results)
 
-    # [Genuine unseen-data test: external validation on IDS2018]
+    # Genuine unseen-data test: external validation on IDS2018
     heavy_usable = harmonized_feature_set(heavy_features)
     lite_usable = harmonized_feature_set(lite_features)
 
@@ -797,7 +797,7 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     plot_generalization_comparison(heavy_indomain_bin, heavy_external_bin, "HeavyNet (XGBoost)")
     plot_generalization_comparison(lite_indomain_bin, lite_external_bin, "LiteNet (Decision Tree)")
 
-    # [Block: Export to ONNX]
+    # Export to ONNX
     heavy_onnx_path = get_unique_path(OUTPUT_DIR / "heavy_xgboost.onnx")
     lite_onnx_path = get_unique_path(OUTPUT_DIR / "lite_decision_tree.onnx")
     try:

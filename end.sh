@@ -1,27 +1,23 @@
+#!/bin/bash
 
-echo "First stop the project:"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-cd ~/reaf-5g-prototype
+echo "Stopping REAF-5G Prototype..."
 
-docker compose down 
+echo "1/4 Stopping Edge Node + Traffic Generator..."
+cd "$SCRIPT_DIR"
+docker compose down || true
 
-echo "Change directories ..."
-sleep 15
-cd docker_open5gs
-
-echo "Stopping the UE ..."
-docker compose -f nr-ue.yaml down
-
+echo "2/4 Stopping the UE..."
+cd "$SCRIPT_DIR/docker_open5gs"
+docker compose -f nr-ue.yaml down || true
 sleep 5
 
-echo "Stopping the gNB..."
-docker compose -f nr-gnb.yaml down
-
-sleep 10
-
-echo "Finally stopping the 5G Core..."
-docker compose -f sa-deploy.yaml down
-
+echo "3/4 Stopping the gNB..."
+docker compose -f nr-gnb.yaml down || true
 sleep 5
 
-echo "Completed: All Stopped."
+echo "4/4 Stopping the 5G Core..."
+docker compose -f sa-deploy.yaml down || true
+
+echo "Completed: All stopped."

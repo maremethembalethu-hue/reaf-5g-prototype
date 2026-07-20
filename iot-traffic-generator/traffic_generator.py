@@ -34,15 +34,18 @@ IFACE        = os.getenv("UE_TUNNEL_IFACE", "uesimtun0")
 TARGET_IP    = os.getenv("TARGET_IP", "192.168.100.1")
 INTERVAL     = float(os.getenv("SEND_INTERVAL", "2"))
 MODE         = os.getenv("MODE", "synthetic")
-PCAP_PATH    = os.getenv("PCAP_PATH", "pcaps/recon/Recon-PortScan.pcap")
+PCAP_PATH    = os.getenv("PCAP_PATH", "pcaps/Recon-PortScan.pcap")
 REPLAY_SPEED = float(os.getenv("REPLAY_SPEED", "1.0"))
 
 # Fixed sequence used by MODE=mixed
 MIXED_SEQUENCE = [
-    "pcaps/benign/benign.pcap",
-    "pcaps/recon/Recon-PortScan.pcap",
-    "pcaps/ddos/DDOS-TCP_Flood.pcap",
-    "pcaps/benign/benign.pcap",
+    "pcaps/BenignTraffic.pcap",
+    "pcaps/Recon-PortScan.pcap",
+    "pcaps/DDoS-UDP_Flood.pcap",
+    "pcaps/DDoS-TCP_Flood.pcap",
+    "pcaps/DDOS-ICMP_Flood.pcap",
+    "pcaps/Mirai-udpplain.pcap",
+    "pcaps/Mirai-greip_flood.pcap"
 ]
 
 

@@ -1,108 +1,85 @@
 
-# Extracts the 23feature subset (Heavy Model) and 10feature subset (Lite Model) from a live Scapy packet.
+# Extracts the 23 feature subset (Heavy Model) and 10 feature subset (Lite Model) from a live Scapy packet.
 
 # Feature order must exactly match what was used during training
 
 
 import numpy as np
-from scapy.all import IP, TCP, UDP, ICMP
 
+EPS = 1e-6
 
-#  Heavy Model feature names 
+# Must match REAF-5G_AI_Pipeline.ipynb, Section 7, exactly.
 HEAVY_FEATURES = [
-    "Header_Length", "Protocol Type", "Rate", "fin_flag_number",
-    "syn_flag_number", "rst_flag_number", "psh_flag_number",
-    "ack_flag_number", "ece_flag_number", "cwr_flag_number",
-    "ack_count", "syn_count", "fin_count", "rst_count",
-    "TCP", "UDP", "ICMP", "HTTP", "DNS", "Tot sum",
-    "Min", "Max", "AVG"
+    "flow_duration", "Rate", "Srate", "Drate", "Tot sum", "Number", "Tot size",
+    "IAT", "Header_Length", "Min", "Max", "AVG", "Std",
+    "Magnitude", "Radius", "Covariance", "Variance", "Weight",
+    "syn_flag_number", "rst_flag_number", "psh_flag_number", "ack_flag_number",
+    "rst_count", "Protocol Type",
 ]
 
-#  Lite Model feature names  
 LITE_FEATURES = [
-    "Protocol Type", "syn_flag_number", "ack_flag_number",
-    "fin_flag_number", "rst_flag_number", "TCP", "UDP",
-    "Tot sum", "Rate", "Header_Length"
+    "IAT", "Magnitude", "Protocol Type", "Header_Length", "Min",
+    "flow_duration", "fin_count", "rst_count", "Srate", "urg_count",
 ]
 
 
-def extract_heavy(packet) :
-  
-    #Extract 23 features for the Heavy Model.
-    features = _extract_base(packet)
-    values = [features.get(f, 0.0) for f in HEAVY_FEATURES]
-    return np.array(values, dtype=np.float32).reshape(1, 1)
+def compute_base_features(flow):
+    # Turns a finished flow record into a dict covering every feature name used by either HEAVY_FEATURES or LITE_FEATURES.
+    lengths = np.array(flow["lengths"], dtype=np.float64)
+    n = len(lengths)
+    duration = max(flow["last_time"] - flow["start_time"], 0.0)
+    iat = np.array(flow["interarrival"], dtype=np.float64) if flow["interarrival"] else np.array([0.0])
+    headers = np.array(flow["header_lengths"], dtype=np.float64) if flow["header_lengths"] else np.array([0.0])
+
+    mean_len = float(lengths.mean()) if n else 0.0
+    std_len = float(lengths.std()) if n else 0.0
+    var_len = float(lengths.var()) if n else 0.0
+
+    # Lag-1 autocovariance of packet size as a stand-in for "Covariance" between consecutive packets in the flow.
+    if n > 1:
+        covariance = float(np.cov(lengths[:-1], lengths[1:])[0, 1])
+    else:
+        covariance = 0.0
+
+    feats = {
+        "flow_duration": duration,
+        "Number": float(n),
+        "Tot sum": float(lengths.sum()) if n else 0.0,
+        "Tot size": float(lengths.sum()) if n else 0.0,  # see docstring: same total-bytes value as Tot sum here
+        "Min": float(lengths.min()) if n else 0.0,
+        "Max": float(lengths.max()) if n else 0.0,
+        "AVG": mean_len,
+        "Std": std_len,
+        "IAT": float(iat.mean()),
+        "Header_Length": float(headers.mean()),
+        "Rate": n / duration if duration > EPS else float(n) / EPS,
+        "Srate": flow["fwd_count"] / duration if duration > EPS else float(flow["fwd_count"]) / EPS,
+        "Drate": flow["bwd_count"] / duration if duration > EPS else float(flow["bwd_count"]) / EPS,
+        "Magnitude": float(np.sqrt(mean_len)) if mean_len > 0 else 0.0,
+        "Radius": std_len,
+        "Covariance": covariance,
+        "Variance": var_len,
+        "Weight": float(n),
+        "Protocol Type": float(flow["proto"]),
+        "syn_flag_number": float(flow["flags"]["syn"]),
+        "rst_flag_number": float(flow["flags"]["rst"]),
+        "psh_flag_number": float(flow["flags"]["psh"]),
+        "ack_flag_number": float(flow["flags"]["ack"]),
+        "fin_count": float(flow["flags"]["fin"]),
+        "rst_count": float(flow["flags"]["rst"]),
+        "urg_count": float(flow["flags"]["urg"]),
+    }
+    return feats
 
 
-def extract_lite(packet) :
-    
-    # Extract 10 features for the Lite Model.
-    features = _extract_base(packet)
-    values = [features.get(f, 0.0) for f in LITE_FEATURES]
-    return np.array(values, dtype=np.float32).reshape(1, 1)
+def vectorize(feats, feature_list):
+    # Orders a feature dict into the exact column order a model expects.
+    return np.array([feats.get(f, 0.0) for f in feature_list], dtype=np.float32).reshape(1, -1)
 
 
-def _extract_base(packet):
+def extract_heavy(flow) :
+    return vectorize(compute_base_features(flow), HEAVY_FEATURES)
 
-   # Extract all available features from a single packet.   
-    f = {}
 
-    if IP not in packet:
-        return {k: 0.0 for k in HEAVY_FEATURES}
-
-    ip = packet[IP]
-    pkt_len = len(packet)
-
-    #  IP / Protocol 
-    f["Header_Length"] = ip.ihl * 4      # IP header length in bytes
-    f["Protocol Type"] = ip.proto        # 6=TCP, 17=UDP, 1=ICMP
-    f["Tot sum"]       = pkt_len
-    f["Min"]           = pkt_len         # single packet: min=max=avg
-    f["Max"]           = pkt_len
-    f["AVG"]           = pkt_len
-
-    # Approximate rate from packet length
-    f["Rate"]          = pkt_len / 1500.0
-
-    #  Protocol onehot flags 
-    f["TCP"]  = 1.0 if TCP  in packet else 0.0
-    f["UDP"]  = 1.0 if UDP  in packet else 0.0
-    f["ICMP"] = 1.0 if ICMP in packet else 0.0
-
-    #  TCP flags 
-    f["fin_flag_number"] = 0.0
-    f["syn_flag_number"] = 0.0
-    f["rst_flag_number"] = 0.0
-    f["psh_flag_number"] = 0.0
-    f["ack_flag_number"] = 0.0
-    f["ece_flag_number"] = 0.0
-    f["cwr_flag_number"] = 0.0
-    f["ack_count"]       = 0.0
-    f["syn_count"]       = 0.0
-    f["fin_count"]       = 0.0
-    f["rst_count"]       = 0.0
-
-    if TCP in packet:
-        tcp = packet[TCP]
-        flags = int(tcp.flags)
-        f["fin_flag_number"] = 1.0 if flags & 0x01 else 0.0
-        f["syn_flag_number"] = 1.0 if flags & 0x02 else 0.0
-        f["rst_flag_number"] = 1.0 if flags & 0x04 else 0.0
-        f["psh_flag_number"] = 1.0 if flags & 0x08 else 0.0
-        f["ack_flag_number"] = 1.0 if flags & 0x10 else 0.0
-        f["ece_flag_number"] = 1.0 if flags & 0x40 else 0.0
-        f["cwr_flag_number"] = 1.0 if flags & 0x80 else 0.0
-        # Cumulative counts, same as flag presence for single packet
-        f["syn_count"] = f["syn_flag_number"]
-        f["ack_count"] = f["ack_flag_number"]
-        f["fin_count"] = f["fin_flag_number"]
-        f["rst_count"] = f["rst_flag_number"]
-
-    #  Application protocol hints
-    dport = packet[TCP].dport if TCP in packet else (
-            packet[UDP].dport if UDP in packet else 0)
-
-    f["HTTP"] = 1.0 if dport in (80, 8080) else 0.0
-    f["DNS"]  = 1.0 if dport == 53 else 0.0
-
-    return f
+def extract_lite(flow):
+    return vectorize(compute_base_features(flow), LITE_FEATURES)

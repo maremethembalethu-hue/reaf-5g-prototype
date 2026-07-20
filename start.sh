@@ -48,31 +48,10 @@ echo "      UE IP   : $UE_IP"
 echo "      UPF GW  : $UPF_GW"
 
 # Step 5: Start edge node inside UPF network namespace
-echo "5/6 Building and starting Edge Node..."
+echo "5/6 Building and starting Edge Node and Traffic Generator..."
 cd "$SCRIPT_DIR"
-docker build -t reaf-5g-prototype-5g-edge-node ./5g-edge-node
-docker rm -f 5g-edge-node 2>/dev/null || true
-docker run -d \
-    --name 5g-edge-node \
-    --network container:upf \
-    --cap-add NET_ADMIN \
-    --cap-add SYS_ADMIN \
-    --privileged \
-    -v "$SCRIPT_DIR/evidence:/evidence" \
-    -e UE_SUBNET="192.168.100.0/24" \
-    reaf-5g-prototype-5g-edge-node
-
-# Step 6: Start traffic generator inside UE network namespace
-echo "6/6 Building and starting Traffic Generator..."
-docker build -t reaf-iot-generator ./iot-traffic-generator
-docker rm -f reaf-traffic 2>/dev/null || true
-docker run -d \
-    --name reaf-traffic \
-    --network container:nr_ue \
-    --cap-add NET_ADMIN \
-    -e UE_TUNNEL_IFACE=uesimtun0 \
-    -e TARGET_IP="$UPF_GW" \
-    reaf-iot-generator
+export TARGET_IP="$UPF_GW"
+docker compose up -d --build 5g-edge-node iot-traffic-generator
 
 # reaf-traffic shares nr_ue network namespace but Docker resets the route on container start so  fix it here as well
 echo "      Waiting 5 seconds for traffic generator to initialise..."

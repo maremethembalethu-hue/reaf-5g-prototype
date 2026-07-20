@@ -8,6 +8,7 @@ import json
 import hashlib
 import logging
 from datetime import datetime, timezone
+import rfc3161ng
 
 log = logging.getLogger(__name__)
 
@@ -19,8 +20,8 @@ TSA_URL = os.getenv("TSA_URL", "https://freetsa.org/tsr")
 
 def hash_directory(directory):
     
-    # # Compute SHA-256 hash of all files in an evidence bundle directory.
-    # # Files are processed in sorted order for reproducibility.
+    # Compute SHA-256 hash of all files in an evidence bundle directory.
+    # Files are processed in sorted order for reproducibility.
     
     sha256 = hashlib.sha256()
     for root, _, files in os.walk(directory):
@@ -36,7 +37,7 @@ def hash_directory(directory):
 
 
 def get_previous_hash():
-    # Read the hash of the last entry in the custody log."""
+    # Read the hash of the last entry in the custody log.
     if not os.path.exists(COC_LOG):
         return "0" * 64   # genesis block — no previous hash
     try:
@@ -50,11 +51,10 @@ def get_previous_hash():
         return "0" * 64
 
 def _rfc3161_timestamp(digest):
-    """Trusted timestamp. Returns {'trusted': False} on any failure (no network, TSA down, library missing) rather than raising a failed trusted timestamp should never block evidence preservation."""
+   # Trusted timestamp. Returns {'trusted': False} on any failure, no network, library missing rather than raising a failed trusted timestamp should never block evidence preservation.
     if not USE_RFC3161:
         return {"trusted": False, "reason": "disabled"}
     try:
-        import rfc3161ng
         timestamper = rfc3161ng.RemoteTimestamper(TSA_URL, hashname="sha256")
         token = timestamper.timestamp(digest=digest)
         return {"trusted": True, "tsa_url": TSA_URL, "token_b64": token.hex()}
@@ -90,7 +90,7 @@ def preserve_bundle(bundle_dir, meta):
         "bundle_dir":    bundle_dir
     }
 
-    # Append to log — one JSON object per line (append-only)
+    # Append to log one JSON object per line
     os.makedirs(EVIDENCE_DIR, exist_ok=True)
     with open(COC_LOG, "a") as f:
         f.write(json.dumps(entry) + "\n")

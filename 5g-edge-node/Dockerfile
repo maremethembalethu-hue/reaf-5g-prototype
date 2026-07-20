@@ -1,11 +1,11 @@
 FROM python:3.11-slim
 
 # Install system packages needed for packet capture
-# tcpdump     — raw packet capture tool (also used as fallback)
-# iproute2    — ip command for interface detection
-# net-tools   — ifconfig for legacy interface listing
-# iputils-ping — ping for connectivity testing
-# libpcap-dev — C library that Scapy uses for raw socket capture
+# tcpdump: raw packet capture tool (also used as fallback)
+# iproute2: ip command for interface detection
+# net-tools: ifconfig for legacy interface listing
+# iputils-ping: ping for connectivity testing
+# libpcap-dev: C library that Scapy uses for raw socket capture
 RUN apt-get update && apt-get install -y \
     tcpdump \
     iproute2 \
@@ -17,16 +17,12 @@ RUN apt-get update && apt-get install -y \
 # Set working directory inside the container
 WORKDIR /app
 
-# Copy and install Python dependencies first
-# Doing this before copying code means Docker caches this layer
-# and does not reinstall packages every time you change capture.py
+# Copy and install Python dependencies first, Docker caches this layer and does not reinstall packages every time you change capture.py
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy all Python files into the container
 COPY . .
 
-# -u flag forces Python to run in unbuffered mode
-# This means log output appears in docker logs immediately
-# without buffering — critical for real-time forensic monitoring
+# -u flag forces Python to run in unbuffered mode, this means log output appears in docker logs immediately
 CMD ["python3", "-u", "capture.py"]

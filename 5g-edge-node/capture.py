@@ -3,10 +3,12 @@
 
 import os
 import sys
+import time
 import logging
 import subprocess
 from datetime import datetime, timezone
 
+from scapy.all import sniff, IP
 
 from flow_builder import FlowTable
 from model_engine import classify_flow
@@ -20,7 +22,6 @@ _log.getLogger("scapy.runtime").setLevel(_log.ERROR)
 _log.getLogger("scapy.interactive").setLevel(_log.ERROR)
 _log.getLogger("scapy.loading").setLevel(_log.ERROR)
 
-from scapy.all import sniff, IP, TCP, UDP, ICMP
 
 #  Logging 
 logging.basicConfig(
@@ -38,7 +39,7 @@ UE_PREFIX    = ".".join(UE_SUBNET.split(".")[:3])
 
 flow_table = FlowTable()
 
-def _handle_finished_flow(flow):
+def handle_finished_flow(flow):
     result = classify_flow(flow)
 
     ts = datetime.now(timezone.utc).isoformat()
@@ -60,12 +61,11 @@ def on_packet(pkt):
 
     finished = flow_table.add_packet(pkt, ts=time.time())
     if finished is not None:
-        _handle_finished_flow(finished)
+        handle_finished_flow(finished)
 
-    # Cheap to check every packet at lab-scale traffic volumes; finalizes any
-    # flow that has gone idle even if it never hit the packet-count threshold.
+    # check every packet at lab-scale traffic volumes; finalizes any flow that has gone idle even if it never hit the packet-count threshold.
     for stale_flow in flow_table.expire_stale_flows():
-        _handle_finished_flow(stale_flow)
+        handle_finished_flow(stale_flow)
 
 #  Main 
 def main():
@@ -81,12 +81,12 @@ def main():
 
     log.info("Starting tcpdump capture pipe...")
 
-    # tcpdump -i any    — capture on ALL interfaces including ogstun (TUN)
-    # -n                — do not resolve hostnames (faster)
-    # -U                — packet-buffered output (flush each packet immediately)
-    # -w -              — write raw pcap to stdout
-    # host 192.168.100  — BPF filter: only UE subnet packets
-    # 2>/dev/null       — suppress tcpdump startup messages
+    # tcpdump -i any: capture on ALL interfaces including ogstun 
+    # -n: do not resolve hostnames
+    # -U: packet-buffered output
+    # -w: write raw pcap to stdout
+    # host 192.168.100: BPF filter: only UE subnet packets
+    # 2>/dev/null: suppress tcpdump startup messages
     tcpdump = subprocess.Popen(
     [
         "tcpdump",

@@ -34,9 +34,9 @@ def collect_evidence(packets, result: dict, timestamp: str):
     try:
         wrpcap(pcap_path, packets)
         paths["network"] = pcap_path
-        log.info(f"  [1/4] Network layer saved: {pcap_path}")
+        log.info(f"  1/4 Network layer saved: {pcap_path}")
     except Exception as e:
-        log.error(f"  [1/4] Network capture failed: {e}")
+        log.error(f"  1/4 Network capture failed: {e}")
 
     #  Layer 2: Process 
     proc_path = os.path.join(bundle_dir, "processes.json")
@@ -50,9 +50,9 @@ def collect_evidence(packets, result: dict, timestamp: str):
         with open(proc_path, "w") as f:
             json.dump({"timestamp": timestamp, "processes": processes}, f, indent=2)
         paths["processes"] = proc_path
-        log.info(f"  [2/4] Process layer saved: {proc_path} ({len(processes)} processes)")
+        log.info(f"  2/4 Process layer saved: {proc_path} ({len(processes)} processes)")
     except Exception as e:
-        log.error(f"  [2/4] Process capture failed: {e}")
+        log.error(f" 2/4 Process capture failed: {e}")
 
     #  Layer 3: Memory 
     mem_path = os.path.join(bundle_dir, "memory.json")
@@ -72,9 +72,9 @@ def collect_evidence(packets, result: dict, timestamp: str):
         with open(mem_path, "w") as f:
             json.dump(memory_snapshot, f, indent=2)
         paths["memory"] = mem_path
-        log.info(f"  [3/4] Memory layer saved: {mem_path}")
+        log.info(f"  3/4 Memory layer saved: {mem_path}")
     except Exception as e:
-        log.error(f"  [3/4] Memory capture failed: {e}")
+        log.error(f"  3/4 Memory capture failed: {e}")
 
     #  Layer 4: System logs 
     syslog_path = os.path.join(bundle_dir, "syslog.txt")
@@ -86,9 +86,9 @@ def collect_evidence(packets, result: dict, timestamp: str):
         with open(syslog_path, "w") as f:
             f.write(result_proc.stdout or "No syslog available")
         paths["syslog"] = syslog_path
-        log.info(f"  [4/4] System layer saved: {syslog_path}")
+        log.info(f"  4/4 System layer saved: {syslog_path}")
     except Exception as e:
-        log.warning(f"  [4/4] Syslog not available: {e}")
+        log.warning(f"  4/4 Syslog not available: {e}")
 
     #  Metadata file 
     meta = {
@@ -97,7 +97,6 @@ def collect_evidence(packets, result: dict, timestamp: str):
         "attack_type":  result["attack_type"],
         "confidence":   result["confidence"],
         "model_used":   result["model_used"],
-        "cpu_percent":  result["cpu_percent"],
         "ram_percent":  result["ram_percent"],
         "packet_count": len(packets),
         "evidence_files": paths
