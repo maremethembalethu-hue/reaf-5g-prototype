@@ -47,6 +47,13 @@ UPF_GW=$(echo "$UE_IP" | sed 's/\.[0-9]*$/.1/')
 echo "      UE IP   : $UE_IP"
 echo "      UPF GW  : $UPF_GW"
 
+
+
+echo "Removing old REAF containers..."
+
+docker rm -f reaf-traffic 2>/dev/null || true
+docker rm -f 5g-edge-node 2>/dev/null || true
+sleep 10
 # Step 5: Start edge node inside UPF network namespace
 echo "5/6 Building and starting Edge Node and Traffic Generator..."
 cd "$SCRIPT_DIR"
