@@ -1,4 +1,4 @@
-FROM python:3.11-sli
+FROM python:3.11-slim
 
 # iproute2: ip command to detect uesimtun0 and get its IP
 # iputils-ping: ping for tunnel verification
