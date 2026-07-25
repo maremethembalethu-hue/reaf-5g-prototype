@@ -1,0 +1,22 @@
+# Version control
+.git
+
+# Python caches and compiled files
+__pycache__/
+*.pyc
+
+# Network captures and logs
+*.pcap
+*.pcapng
+*.log
+
+# Data and environment files
+*.csv
+.env
+
+# Virtual environments
+venv/
+
+# Large project directories
+evidence/
+models/
