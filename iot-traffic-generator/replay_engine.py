@@ -9,11 +9,13 @@ import logging
 import subprocess
 from pathlib import Path
 
-from scapy.all import rdpcap, send, IP
+from scapy.all import rdpcap, send, IP, L3RawSocket
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 logging.getLogger("scapy.interactive").setLevel(logging.ERROR)
 logging.getLogger("scapy.loading").setLevel(logging.ERROR)
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 
 log = logging.getLogger("TRAFFIC-GEN")
 
@@ -54,7 +56,11 @@ def rewrite_packet(pkt, ue_ip, target_ip=TARGET_IP):
         del ip_pkt.payload.chksum
     return ip_pkt
 
-
+def make_socket(iface=IFACE):
+    
+    # L3RawSocket uses IPPROTO_RAW / SOCK_RAW, bypasses the link layer
+    # entirely, and works correctly on TUN interfaces
+    return L3RawSocket(iface=iface)
 def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, ue_ip=None):
     # Replays one PCAP end-to-end: rewrite addresses, reproduce original timing, send.
     ue_ip = ue_ip or get_ue_ip(iface)
@@ -66,32 +72,58 @@ def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, u
     if not packets:
         log.warning(f"No packets found in {pcap_path}")
         return
+    
+    own_socket = sock is None
+    if own_socket:
+        sock = make_socket(iface)
 
-    log.info(f"REPLAY | {Path(pcap_path).name} | {ue_ip} -> {target_ip} | speed={replay_speed}x")
+    log.info(f"REPLAY | {Path(pcap_path).name} | {ue_ip} - {target_ip} | speed={replay_speed}x")
     prev_ts = float(packets[0].time)
 
-    for pkt in packets:
-        delay = (float(pkt.time) - prev_ts) / replay_speed
-        if delay > 0:
-            time.sleep(delay)
-        prev_ts = float(pkt.time)
-
-        out_pkt = rewrite_packet(pkt, ue_ip, target_ip)
-        if out_pkt is None:
-            continue
-        send(out_pkt, iface=iface, verbose=False)
-        log.info(f"REPLAY | {ue_ip} -> {target_ip} | {out_pkt.summary()}")
-
+    prev_ts = float(packets[0].time)
+    sent = 0
+    skipped = 0
+    errors = 0
+ 
+    try:
+        for i, pkt in enumerate(packets):
+            delay = (float(pkt.time) - prev_ts) / replay_speed
+            if delay > 0:
+                time.sleep(delay)
+            prev_ts = float(pkt.time)
+ 
+            out_pkt = rewrite_packet(pkt, ue_ip, target_ip)
+            if out_pkt is None:
+                skipped += 1
+                continue
+ 
+            try:
+                sock.send(out_pkt)
+                sent += 1
+                log.info(f"REPLAY | {ue_ip} - {target_ip} | {out_pkt.summary()}")
+            except OSError as e:
+                errors += 1
+                log.error(f"send() failed on packet {i}: {e}")
+    finally:
+        if own_socket:
+            sock.close()
+ 
     log.info(f"REPLAY | {Path(pcap_path).name} complete "
-             f"(expected_attack={metadata.get('expected_attack', 'unknown')})")
+             f"(sent={sent}, skipped_non_ip={skipped}, errors={errors}, "
+             f"expected_attack={metadata.get('expected_attack', 'unknown')})")
+    return sent
 
 
 def replay_mixed(pcap_paths, replay_speed=1.0, gap=3.0, iface=IFACE, target_ip=TARGET_IP):
     # Replays a sequence of PCAPs back to back, e.g. [benign, recon, ddos, benign].
     ue_ip = get_ue_ip(iface)
-    for p in pcap_paths:
-        replay_pcap(p, replay_speed=replay_speed, target_ip=target_ip, iface=iface, ue_ip=ue_ip)
-        time.sleep(gap)
+    sock = make_socket(iface)
+    try:
+        for p in pcap_paths:
+            replay_pcap(p, replay_speed=replay_speed, target_ip=target_ip, iface=iface, ue_ip=ue_ip, sock=sock)
+            time.sleep(gap)
+    finally:
+        sock.close()
 
 
 def replay_random(pcap_dir=PCAP_DIR, replay_speed=1.0, iface=IFACE, target_ip=TARGET_IP):

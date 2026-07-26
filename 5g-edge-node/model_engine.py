@@ -15,7 +15,7 @@ from resource_monitor import get_model_tier, get_metrics
 
 log = logging.getLogger(__name__)
 
-MODEL_DIR         = os.path.join(os.path.dirname(__file__), "detection_models")
+MODEL_DIR         = os.path.join(os.path.dirname(__file__), "model_training/outputs")
 HEAVY_MODEL_PATH  = os.path.join(MODEL_DIR, "model_full.onnx")
 LITE_MODEL_PATH   = os.path.join(MODEL_DIR, "model_lite.onnx")
 HEAVY_SCALER_PATH = os.path.join(MODEL_DIR, "heavy_scaler.pkl")
