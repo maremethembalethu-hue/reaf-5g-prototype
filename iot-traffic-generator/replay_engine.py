@@ -1,51 +1,74 @@
-
-# Loads a captured PCAP, rewrites its addresses onto the live Open5GS lab, reproduces the original inter-packet timing, and sends each packet out through uesimtun0.
-
 import os
 import time
 import json
 import random
 import logging
-import subprocess
+import socket
+import struct
+import fcntl
 from pathlib import Path
 
-from scapy.all import rdpcap, send, IP, L3RawSocket
+from scapy.all import RawPcapReader, Ether, IP, IPv6, L3RawSocket
+
+# pcap link-layer type codes we know how to decode.
+# https://www.tcpdump.org/linktypes.html
+_LINKTYPE_DECODERS = {
+    1:   Ether,   # DLT_EN10MB  standard Ethernet capture (most tcpdump/CICIoT2023 pcaps)
+    101: IP,      # DLT_RAW     raw IP, no link-layer header
+    228: IP,      # DLT_IPV4    raw IPv4, no link-layer header
+    229: IPv6,    # DLT_IPV6    raw IPv6, no link-layer header
+}
 
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 logging.getLogger("scapy.interactive").setLevel(logging.ERROR)
 logging.getLogger("scapy.loading").setLevel(logging.ERROR)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
-
 log = logging.getLogger("TRAFFIC-GEN")
 
-# Same defaults as traffic_generator.py, so both modules agree on the lab network
 IFACE     = os.getenv("UE_TUNNEL_IFACE", "uesimtun0")
 TARGET_IP = os.getenv("TARGET_IP", "192.168.100.1")
 PCAP_DIR  = Path(os.getenv("PCAP_DIR", "pcaps"))
 
 
 def get_ue_ip(iface=IFACE):
-    # Same tunnel-IP lookup traffic_generator.py uses for synthetic mode.
-    result = subprocess.run(["ip", "addr", "show", iface], capture_output=True, text=True)
-    for line in result.stdout.split("\n"):
-        if "inet " in line and "inet6" not in line:
-            return line.strip().split()[1].split("/")[0]
-    return None
+    # ioctl(SIOCGIFADDR) lookup instead of shelling out to `ip` and parsing
+    # text  no dependency on the `ip` binary, no locale/format parsing risk.
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            packed_iface = struct.pack("256s", iface[:15].encode("utf-8"))
+            addr = fcntl.ioctl(s.fileno(), 0x8915, packed_iface)  # SIOCGIFADDR
+            return socket.inet_ntoa(addr[20:24])
+        finally:
+            s.close()
+    except OSError as e:
+        log.error(f"Could not read address for {iface}: {e}")
+        return None
 
 
-def load_pcap(pcap_path):
-    # Reads a PCAP and its optional metadata sidecar (same base name, .json extension).
-    packets = rdpcap(str(pcap_path))
+def load_metadata(pcap_path):
+    # rdpcap is gone, but the .json sidecar (expected_attack label etc) is
+    # still worth reading  it's tiny, unrelated to the packet-count problem.
     meta_path = Path(str(pcap_path).rsplit(".", 1)[0] + ".json")
-    metadata = json.loads(meta_path.read_text()) if meta_path.exists() else {}
-    log.info(f"Loaded {len(packets)} packets from {pcap_path.name} "
-             f"(expected_attack={metadata.get('expected_attack', 'unknown')})")
-    return packets, metadata
+    return json.loads(meta_path.read_text()) if meta_path.exists() else {}
+
+
+def iter_packets(pcap_path):
+    reader = RawPcapReader(str(pcap_path))
+    decoder = _LINKTYPE_DECODERS.get(reader.linktype)
+    if decoder is None:
+        log.warning(f"Unrecognized linktype {reader.linktype} for {pcap_path}, "
+                     f"defaulting to Ethernet decode")
+        decoder = Ether
+
+    for raw_bytes, pkt_meta in reader:
+        pkt = decoder(raw_bytes)
+        ts = pkt_meta.sec + pkt_meta.usec / 1e6
+        yield pkt, ts
 
 
 def rewrite_packet(pkt, ue_ip, target_ip=TARGET_IP):
-    # Drops non-IP layers (such as Ethernet, captured on a different network) and remaps src/dst onto the lab network, then forces checksum recalculation.
     if IP not in pkt:
         return None
     ip_pkt = pkt[IP].copy()
@@ -56,66 +79,96 @@ def rewrite_packet(pkt, ue_ip, target_ip=TARGET_IP):
         del ip_pkt.payload.chksum
     return ip_pkt
 
+
 def make_socket(iface=IFACE):
-    
-    # L3RawSocket uses IPPROTO_RAW / SOCK_RAW, bypasses the link layer
-    # entirely, and works correctly on TUN interfaces
+   
     return L3RawSocket(iface=iface)
-def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, ue_ip=None):
-    # Replays one PCAP end-to-end: rewrite addresses, reproduce original timing, send.
+
+
+def replay_single_packet(pcap_path, iface=IFACE, target_ip=TARGET_IP, ue_ip=None):
+   
+    ue_ip = ue_ip or get_ue_ip(iface)
+    if ue_ip is None:
+        print(f"FAIL: could not resolve IP on {iface}")
+        return False
+
+    print(f"Opening {pcap_path} with RawPcapReader...")
+    for pkt, ts in iter_packets(pcap_path):
+        print(f"Read one packet, ts={ts}")
+        if IP not in pkt:
+            print("  not an IP packet, skipping")
+            continue
+
+        print(f"  original: {pkt.summary()}")
+        out_pkt = rewrite_packet(pkt, ue_ip, target_ip)
+        print(f"  rewritten: {out_pkt.summary()}")
+
+        sock = make_socket(iface)
+        print("Sending...")
+        try:
+            sock.send(out_pkt)
+            print("Sent")
+            return True
+        except OSError as e:
+            print(f"FAIL: sock.send() raised {e}")
+            return False
+        finally:
+            sock.close()
+
+    print("FAIL: pcap contained no IP packets (or was empty)")
+    return False
+
+
+def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, ue_ip=None, sock=None):
     ue_ip = ue_ip or get_ue_ip(iface)
     if ue_ip is None:
         log.error(f"Could not resolve UE IP on {iface}; aborting replay")
-        return
+        return 0
 
-    packets, metadata = load_pcap(Path(pcap_path))
-    if not packets:
-        log.warning(f"No packets found in {pcap_path}")
-        return
-    
+    metadata = load_metadata(pcap_path)
     own_socket = sock is None
     if own_socket:
         sock = make_socket(iface)
 
-    log.info(f"REPLAY | {Path(pcap_path).name} | {ue_ip} - {target_ip} | speed={replay_speed}x")
-    prev_ts = float(packets[0].time)
-
-    prev_ts = float(packets[0].time)
+    log.info(f"REPLAY | {Path(pcap_path).name} | {ue_ip} -> {target_ip} | speed={replay_speed}x")
+    prev_ts = None
     sent = 0
     skipped = 0
     errors = 0
- 
+    total = 0
+
     try:
-        for i, pkt in enumerate(packets):
-            delay = (float(pkt.time) - prev_ts) / replay_speed
-            if delay > 0:
-                time.sleep(delay)
-            prev_ts = float(pkt.time)
- 
+        for pkt, ts in iter_packets(pcap_path):
+            total += 1
+            if prev_ts is not None:
+                delay = (ts - prev_ts) / replay_speed
+                if delay > 0:
+                    time.sleep(delay)
+            prev_ts = ts
+
             out_pkt = rewrite_packet(pkt, ue_ip, target_ip)
             if out_pkt is None:
                 skipped += 1
                 continue
- 
+
             try:
                 sock.send(out_pkt)
                 sent += 1
-                log.info(f"REPLAY | {ue_ip} - {target_ip} | {out_pkt.summary()}")
+                log.info(f"REPLAY | {ue_ip} -> {target_ip} | {out_pkt.summary()}")
             except OSError as e:
                 errors += 1
-                log.error(f"send() failed on packet {i}: {e}")
+                log.error(f"send() failed on packet {total}: {e}")
     finally:
         if own_socket:
             sock.close()
- 
+
     log.info(f"REPLAY | {Path(pcap_path).name} complete "
-             f"(sent={sent}, skipped_non_ip={skipped}, errors={errors}, "
+             f"(read={total}, sent={sent}, skipped_non_ip={skipped}, errors={errors}, "
              f"expected_attack={metadata.get('expected_attack', 'unknown')})")
     return sent
 
 
 def replay_mixed(pcap_paths, replay_speed=1.0, gap=3.0, iface=IFACE, target_ip=TARGET_IP):
-    # Replays a sequence of PCAPs back to back, e.g. [benign, recon, ddos, benign].
     ue_ip = get_ue_ip(iface)
     sock = make_socket(iface)
     try:
@@ -127,7 +180,6 @@ def replay_mixed(pcap_paths, replay_speed=1.0, gap=3.0, iface=IFACE, target_ip=T
 
 
 def replay_random(pcap_dir=PCAP_DIR, replay_speed=1.0, iface=IFACE, target_ip=TARGET_IP):
-    # Picks one random .pcap file anywhere under pcap_dir and replays it.
     candidates = list(Path(pcap_dir).rglob("*.pcap"))
     if not candidates:
         log.error(f"No .pcap files found under {pcap_dir}")

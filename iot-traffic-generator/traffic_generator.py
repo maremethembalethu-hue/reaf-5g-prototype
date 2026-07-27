@@ -154,7 +154,7 @@ def main():
 
     elif MODE == "mixed":
         log.info(f"Replaying mixed sequence: {MIXED_SEQUENCE}")
-        replay_mixed(MIXED_SEQUENCE, replay_speed=REPLAY_SPEED,
+        replay_mixed(MIXED_SEQUENCE, replay_speed=REPLAY_SPEED,gap=3.0,
                      target_ip=TARGET_IP, iface=IFACE)
 
     elif MODE == "random":
