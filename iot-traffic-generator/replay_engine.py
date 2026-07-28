@@ -66,11 +66,15 @@ def iter_packets(pcap_path):
 
     for raw_bytes, pkt_meta in reader:
         pkt = decoder(raw_bytes)
+        if IP not in pkt:
+            continue
         ts = pkt_meta.sec + pkt_meta.usec / 1e6
         yield pkt, ts
 
 
 def rewrite_packet(pkt, ue_ip, target_ip=TARGET_IP):
+    if IP not in pkt:
+        return None    
     ip_pkt = pkt[IP].copy()
 
     ip_pkt.src = ue_ip
