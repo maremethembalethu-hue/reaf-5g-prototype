@@ -9,6 +9,7 @@ import subprocess
 from datetime import datetime, timezone
 
 from scapy.all import sniff, IP
+from fragment_reassembly import FragmentReassembler
 
 from flow_builder import FlowTable
 from model_engine import classify_flow
@@ -38,6 +39,7 @@ EVIDENCE_DIR = os.getenv("EVIDENCE_DIR", "/evidence")
 UE_PREFIX    = ".".join(UE_SUBNET.split(".")[:3])
 
 flow_table = FlowTable()
+reassembler = FragmentReassembler()
 
 def handle_finished_flow(flow):
     result = classify_flow(flow)
@@ -59,13 +61,18 @@ def on_packet(pkt):
     if IP not in pkt:
         return
 
+    pkt = reassembler.feed(pkt, ts=time.time())
+    if pkt is None:
+        return  # mid-train fragment, or an incomplete set — wait or drop
+
     finished = flow_table.add_packet(pkt, ts=time.time())
     if finished is not None:
         handle_finished_flow(finished)
 
-    # check every packet at lab-scale traffic volumes; finalizes any flow that has gone idle even if it never hit the packet-count threshold.
     for stale_flow in flow_table.expire_stale_flows():
         handle_finished_flow(stale_flow)
+
+    reassembler.expire_stale()
 
 #  Main 
 def main():

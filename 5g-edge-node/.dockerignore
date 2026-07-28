@@ -6,7 +6,8 @@ __pycache__/
 *.pyc
 
 # Network captures and logs
-
+*.pcap
+*.pcapng
 *.log
 
 # Data and environment files
