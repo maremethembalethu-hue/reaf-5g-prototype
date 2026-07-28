@@ -39,11 +39,13 @@ PCAP_PATH    = os.getenv("PCAP_PATH", "pcaps/Recon-PortScan.pcap")
 REPLAY_SPEED = float(os.getenv("REPLAY_SPEED", "1.0"))
 
 # Fixed sequence used by MODE=mixed
-MIXED_SEQUENCE = [
-    "pcaps/BenignTraffic.pcap",
-    "pcaps/DDoS-UDP_Flood.pcap",
-]
 
+BASE_DIR = Path(__file__).resolve().parent
+
+MIXED_SEQUENCE = [
+    BASE_DIR / "pcaps" / "BenignTraffic.pcap",
+    BASE_DIR / "pcaps" / "DDoS-UDP_Flood.pcap",
+]
 
 #  Get UE IP from tunnel interface 
 def get_ue_ip():

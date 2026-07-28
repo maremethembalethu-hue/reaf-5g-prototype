@@ -7,11 +7,11 @@ import socket
 import struct
 import fcntl
 from pathlib import Path
+from scapy.layers.inet import fragment
 
-from scapy.all import RawPcapReader, Ether, IP, IPv6, L3RawSocket
+from scapy.all import RawPcapReader, Ether, IP, IPv6, L3RawSocket, TCP, UDP
 
 # pcap link-layer type codes we know how to decode.
-# https://www.tcpdump.org/linktypes.html
 _LINKTYPE_DECODERS = {
     1:   Ether,   # DLT_EN10MB  standard Ethernet capture (most tcpdump/CICIoT2023 pcaps)
     101: IP,      # DLT_RAW     raw IP, no link-layer header
@@ -25,12 +25,14 @@ logging.getLogger("scapy.loading").setLevel(logging.ERROR)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
 log = logging.getLogger("TRAFFIC-GEN")
+BASE_DIR = Path(__file__).resolve().parent
 
 IFACE     = os.getenv("UE_TUNNEL_IFACE", "uesimtun0")
 TARGET_IP = os.getenv("TARGET_IP", "192.168.100.1")
-PCAP_DIR  = Path(os.getenv("PCAP_DIR", "pcaps"))
+PCAP_DIR  = BASE_DIR / "pcaps"/ Path(os.getenv("PCAP_DIR", "pcaps"))
 
-
+    # BASE_DIR / "pcaps" / "BenignTraffic.pcap",
+    # BASE_DIR / "pcaps" / "DDoS-UDP_Flood.pcap",
 def get_ue_ip(iface=IFACE):
     # ioctl(SIOCGIFADDR) lookup instead of shelling out to `ip` and parsing
     # text  no dependency on the `ip` binary, no locale/format parsing risk.
@@ -69,14 +71,24 @@ def iter_packets(pcap_path):
 
 
 def rewrite_packet(pkt, ue_ip, target_ip=TARGET_IP):
-    if IP not in pkt:
-        return None
     ip_pkt = pkt[IP].copy()
+
     ip_pkt.src = ue_ip
     ip_pkt.dst = target_ip
-    del ip_pkt.chksum
+
+    if hasattr(ip_pkt, "len"):
+        del ip_pkt.len
+
+    if hasattr(ip_pkt, "chksum"):
+        del ip_pkt.chksum
     if hasattr(ip_pkt.payload, "chksum"):
         del ip_pkt.payload.chksum
+
+    if TCP in ip_pkt:
+        del ip_pkt[TCP].chksum
+
+    elif UDP in ip_pkt:
+        del ip_pkt[UDP].chksum
     return ip_pkt
 
 
@@ -106,7 +118,14 @@ def replay_single_packet(pcap_path, iface=IFACE, target_ip=TARGET_IP, ue_ip=None
         sock = make_socket(iface)
         print("Sending...")
         try:
-            sock.send(out_pkt)
+            
+            if len(bytes(out_pkt)) > 1300:
+                fragments = fragment(out_pkt, fragsize=1300)
+
+                for frag in fragments:
+                    sock.send(frag)
+            else:
+                sock.send(out_pkt)
             print("Sent")
             return True
         except OSError as e:
@@ -152,9 +171,17 @@ def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, u
                 continue
 
             try:
-                sock.send(out_pkt)
+                
+                if len(bytes(out_pkt)) > 1300:
+                    fragments = fragment(out_pkt, fragsize=1300)
+
+                    for frag in fragments:
+                        sock.send(frag)
+                else:
+                    sock.send(out_pkt)
+        
                 sent += 1
-                log.info(f"REPLAY | {ue_ip} -> {target_ip} | {out_pkt.summary()}")
+                log.info(f"REPLAY | {ue_ip} - {target_ip} | {out_pkt.summary()}")
             except OSError as e:
                 errors += 1
                 log.error(f"send() failed on packet {total}: {e}")

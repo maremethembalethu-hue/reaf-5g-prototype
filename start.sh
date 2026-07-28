@@ -15,19 +15,19 @@ echo "2/6 Starting Open5GS 5G Core..."
 cd "$SCRIPT_DIR/docker_open5gs"
 set -a; source .env; set +a
 docker compose -f sa-deploy.yaml up -d
-echo "      Waiting 40 seconds for core to be ready..."
-sleep 40
+echo "      Waiting 25 seconds for core to be ready..."
+sleep 25
 
 # Step 3: Start gNB
 echo "3/6 Starting UERANSIM gNB..."
 docker compose -f nr-gnb.yaml up -d
-sleep 15
+sleep 10
 
 # Step 4: Start UE
 echo "4/6 Starting UERANSIM UE..."
 docker compose -f nr-ue.yaml up -d
 echo "      Waiting 25 seconds for UE registration..."
-sleep 25
+sleep 20
 
 #  replace the default route with uesimtun0 so ALL traffic goes through the 5G tunnel to the UPF
 echo "      nr_ue routing: replacing eth0 default with uesimtun0..."
