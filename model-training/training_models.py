@@ -722,6 +722,15 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     # Feature resolution (handles schema differences across CICIoT2023 redistributions)
     heavy_features, heavy_missing = resolve_feature_set(train, HEAVY_FEATURES, "HEAVY_FEATURES")
     lite_features, lite_missing = resolve_feature_set(train, LITE_FEATURES, "LITE_FEATURES")
+    print("heavy_features: ")
+    print(heavy_features)
+    print("lite_features: ")
+    print(lite_features)
+    
+    print("heavy_missing: ")
+    print(heavy_missing)
+    print("lite_missing: ")
+    print(lite_missing)
     if heavy_missing or lite_missing:
         print("\n[RESEARCH NOTE] This data pull does not match the full 47-column CICIoT2023 "
               "schema referenced in the design.")
@@ -729,6 +738,11 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     # Scaling (train-only fit)
     heavy_scaler = fit_scaler(train, heavy_features)
     lite_scaler = fit_scaler(train, lite_features)
+    
+    print("heavy_scaler: ")
+    print(heavy_scaler)
+    print("lite_scaler: ")
+    print(lite_scaler)
 
     train_h = apply_scaler(train, heavy_features, heavy_scaler)
     val_h = apply_scaler(val, heavy_features, heavy_scaler)

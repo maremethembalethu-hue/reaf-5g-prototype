@@ -15,7 +15,7 @@ TCP_FLAG_BITS = {
 }
 
 
-def _flow_key(pkt):
+def flow_key(pkt):
    # 5-tuple flow key, both directions of a conversation map to the same flow (protocol, sorted (ip, port) pair, sorted (ip, port) pair).
     ip = pkt[IP]
     if TCP in pkt:
@@ -29,7 +29,7 @@ def _flow_key(pkt):
     return (ip.proto, endpoints[0], endpoints[1])
 
 
-def _new_flow(pkt, ts):
+def new_flow(pkt, ts):
     ip = pkt[IP]
     if TCP in pkt:
         sport = pkt[TCP].sport
@@ -67,11 +67,11 @@ class FlowTable:
         if IP not in pkt:
             return None
         ts = ts if ts is not None else time.time()
-        key = _flow_key(pkt)
+        key = flow_key(pkt)
 
         flow = self.flows.get(key)
         if flow is None:
-            flow = _new_flow(pkt, ts)
+            flow = new_flow(pkt, ts)
             self.flows[key] = flow
 
         ip = pkt[IP]
