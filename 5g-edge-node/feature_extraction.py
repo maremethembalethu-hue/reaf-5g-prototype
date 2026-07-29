@@ -5,22 +5,32 @@
 
 
 import numpy as np
+import pandas as pd
 
 EPS = 1e-6
 
 # Must match REAF-5G_AI_Pipeline.ipynb, Section 7, exactly.
 HEAVY_FEATURES = [
-    "flow_duration", "Rate", "Srate", "Drate", "Tot sum", "Number", "Tot size",
-    "IAT", "Header_Length", "Min", "Max", "AVG", "Std",
-    "Magnitude", "Radius", "Covariance", "Variance", "Weight",
-    "syn_flag_number", "rst_flag_number", "psh_flag_number", "ack_flag_number",
-    "rst_count", "Protocol Type",
+    "Rate",
+    "Tot sum",
+    "Number",
+    "Tot size",
+    "IAT",
+    "Header_Length",
+    "Min",
+    "Max",
+    "AVG",
+    "Std",
+    "Variance",
+    "syn_flag_number",
+    "rst_flag_number",
+    "psh_flag_number",
+    "ack_flag_number",
+    "rst_count",
+    "Protocol Type",
 ]
 
-LITE_FEATURES = [
-    "IAT", "Magnitude", "Protocol Type", "Header_Length", "Min",
-    "flow_duration", "fin_count", "rst_count", "Srate", "urg_count",
-]
+LITE_FEATURES = [ "IAT" , "Protocol Type", "Header_Length", "Min", "fin_count", "rst_count", ]
 
 
 def compute_base_features(flow):
@@ -35,12 +45,16 @@ def compute_base_features(flow):
     std_len = float(lengths.std()) if n else 0.0
     var_len = float(lengths.var()) if n else 0.0
 
-    # Lag-1 autocovariance of packet size as a stand-in for "Covariance" between consecutive packets in the flow.
-    if n > 1:
-        covariance = float(np.cov(lengths[:-1], lengths[1:])[0, 1])
+    # Lag-3 autocovariance of packet size as a stand-in for "Covariance" between consecutive packets in the flow.
+    if n >= 3:
+        try:
+            covariance = float(np.cov(lengths[:-1], lengths[1:])[0, 1])
+            if np.isnan(covariance):
+                covariance = 0.0
+        except Exception:
+            covariance = 0.0
     else:
         covariance = 0.0
-
     feats = {
         "flow_duration": duration,
         "Number": float(n),
@@ -69,12 +83,20 @@ def compute_base_features(flow):
         "rst_count": float(flow["flags"]["rst"]),
         "urg_count": float(flow["flags"]["urg"]),
     }
+    
+    for key, value in feats.items():
+        if not np.isfinite(value):
+            feats[key] = 0.0
     return feats
 
 
 def vectorize(feats, feature_list):
     # Orders a feature dict into the exact column order a model expects.
-    return np.array([feats.get(f, 0.0) for f in feature_list], dtype=np.float32).reshape(1, -1)
+   return pd.DataFrame(
+        [[feats.get(f, 0.0) for f in feature_list]],
+        columns=feature_list,
+        dtype=np.float32
+    )
 
 
 def extract_heavy(flow) :

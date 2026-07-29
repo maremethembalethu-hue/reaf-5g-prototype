@@ -15,9 +15,9 @@ from resource_monitor import get_model_tier, get_metrics
 
 log = logging.getLogger(__name__)
 
-MODEL_DIR         = os.path.join(os.path.dirname(__file__), "model-training/outputs")
-HEAVY_MODEL_PATH  = os.path.join(MODEL_DIR, "heavy_agboost.onnx")
-LITE_MODEL_PATH   = os.path.join(MODEL_DIR, "lite_decision.onnx")
+MODEL_DIR         = os.path.join(os.path.dirname(__file__), "trained_models/outputs")
+HEAVY_MODEL_PATH  = os.path.join(MODEL_DIR, "heavy_xgboost.onnx")
+LITE_MODEL_PATH   = os.path.join(MODEL_DIR, "lite_decision_tree.onnx")
 HEAVY_SCALER_PATH = os.path.join(MODEL_DIR, "heavy_scaler.pkl")
 LITE_SCALER_PATH  = os.path.join(MODEL_DIR, "lite_scaler.pkl")
 LABEL_ENCODER_PATH = os.path.join(MODEL_DIR, "label_encoder.pkl")
