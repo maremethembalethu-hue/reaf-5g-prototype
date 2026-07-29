@@ -77,8 +77,20 @@ def rewrite_packet(pkt, ue_ip, target_ip=TARGET_IP):
         return None    
     ip_pkt = pkt[IP].copy()
 
-    ip_pkt.src = ue_ip
-    ip_pkt.dst = target_ip
+    ORIGINAL_UE = "192.168.137.175"
+
+    if ip_pkt.src == ORIGINAL_UE:
+        # outbound
+        ip_pkt.src = ue_ip
+        ip_pkt.dst = target_ip
+
+    elif ip_pkt.dst == ORIGINAL_UE:
+        # inbound
+        #ip_pkt.src = target_ip
+        ip_pkt.dst = ue_ip
+
+    else:
+        return None
 
     if hasattr(ip_pkt, "len"):
         del ip_pkt.len
