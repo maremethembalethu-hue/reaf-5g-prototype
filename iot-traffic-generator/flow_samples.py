@@ -9,7 +9,7 @@ from scapy.utils import PcapReader, wrpcap
 from scapy.all import IP, TCP, UDP
 
 RANDOM_STATE = 42
-SOURCE_ROOT = "./pcaps"
+SOURCE_ROOT = "./iot-traffic-generator/pcaps"
 OUT_PATH = "evaluation/manifest.json"
 
 def flow_key(pkt):
