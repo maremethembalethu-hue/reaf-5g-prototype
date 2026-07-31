@@ -3,11 +3,10 @@
 
 import json
 import csv
-import argparse
 from pathlib import Path
 
 DEFAULT_PREDICTIONS = "evaluation/predictions_log.jsonl"
-DEFAULT_GROUND_TRUTH = "evaluation/ground_truth_log.jsonl"
+DEFAULT_GROUND_TRUTH = "evaluation/truth_log.jsonl"
 DEFAULT_OUT = "evaluation/joined_results.csv"
 
 

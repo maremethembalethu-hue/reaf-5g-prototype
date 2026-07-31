@@ -29,25 +29,27 @@ log = logging.getLogger(__name__)
 IFACE        = os.getenv("UE_TUNNEL_IFACE", "uesimtun0")
 TARGET_IP    = os.getenv("TARGET_IP", "192.168.100.1")
 INTERVAL     = float(os.getenv("SEND_INTERVAL", "2"))
-MODE         = os.getenv("MODE", "synthetic")
-PCAP_PATH    = os.getenv("PCAP_PATH", "pcaps/recon/Recon-PortScan.pcap")
+MODE         = "manifest"
+PCAP_PATH    = os.getenv("PCAP_PATH", "pcaps/Benign/BenignTraffic.pcap")
 REPLAY_SPEED = float(os.getenv("REPLAY_SPEED", "1.0"))
 
 MIXED_SEQUENCE = [
-    "pcaps/benign/benign.pcap",
-    "pcaps/recon/Recon-PortScan.pcap",
-    "pcaps/ddos/DDOS-TCP_Flood.pcap",
-    "pcaps/benign/benign.pcap",
+    "pcaps/benign/BenignTraffic.pcap",
+    "pcaps/ddos/DDOS-UDP_Flood.pcap",
 ]
 
-# MODE=manifest config. manifest.json and pcaps/ are both baked into this
-# image's own /app folder by flow_sampler.py's output paths — no separate
+# manifest.json and pcaps/ are both baked into this
+# image's own /app folder by flow_sampler.py's output paths no separate
 # evaluation/ folder needs to be mounted into this container.
-MANIFEST_PATH = os.getenv("MANIFEST_PATH", "manifest.json")
-GROUND_TRUTH_LOG = os.getenv("GROUND_TRUTH_LOG", "ground_truth_log.jsonl")
-# Must be >= 5g-edge-node/flow_builder.py's IDLE_TIMEOUT_SECONDS plus a
-# safety margin, or the next job's traffic can arrive before the previous
-# job's last flow has gone idle at the live capture side (see doc 12).
+MANIFEST_PATH = os.getenv("MANIFEST_PATH", "pre-selected/manifest.json")
+
+current_dir = Path(__file__).parent
+truth_dir =  current_dir.parent / "evaluation"
+truth_dir.mkdir(exist_ok=True)
+TRUTH_LOG = truth_dir / "truth_log.jsonl"
+
+# IDLE TIMEOUT SECONDS plus, the next job's traffic can arrive before the previous
+# last flow has gone idle at the live capture side.
 SCHEDULER_DRAIN_SECONDS = float(os.getenv("SCHEDULER_DRAIN_SECONDS", "10.0"))
 
 
@@ -130,10 +132,10 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
             "start_ts": start_ts, "end_ts": end_ts,
             "start_time": start_time, "end_time": end_time,
         }
-        with open(GROUND_TRUTH_LOG, "a") as f:
+        with open(TRUTH_LOG, "a") as f:
             f.write(json.dumps(record) + "\n")
 
-    log.info(f"All {len(manifest)} replay jobs complete. Ground truth: {GROUND_TRUTH_LOG}")
+    log.info(f"All {len(manifest)} replay jobs complete. Ground truth: {TRUTH_LOG}")
 
 
 def main():

@@ -6,6 +6,12 @@ import os
 import json
 from pathlib import Path
 
+current_dir = Path(__file__).parent
+truth_dir =  current_dir.parent / "evaluation"
+truth_dir.mkdir(exist_ok=True)
+PREDICTIONS_LOG = truth_dir / "predictions_log.jsonl"
+
+
 PREDICTIONS_LOG = Path(os.getenv("PREDICTIONS_LOG", "/evidence/predictions_log.jsonl"))
 
 

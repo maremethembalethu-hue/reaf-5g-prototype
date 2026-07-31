@@ -1,4 +1,4 @@
-# Computes the standard evaluation metrics — confusion matrix, accuracy,
+# Computes the standard evaluation metrics: confusion matrix, accuracy,
 # per-class precision/recall/F1, detection rate, false positive rate, false
 # negative rate
 

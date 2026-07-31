@@ -8,9 +8,11 @@ from pathlib import Path
 from scapy.utils import PcapReader, wrpcap
 from scapy.all import IP, TCP, UDP
 
+
+
 RANDOM_STATE = 42
 SOURCE_ROOT = "./iot-traffic-generator/pcaps"
-OUT_PATH = "evaluation/manifest.json"
+OUT_PATH =  "pre-selected/manifest.json"
 
 def flow_key(pkt):
     ip = pkt[IP]
@@ -70,7 +72,7 @@ def sample_pcap(source_pcap, expected_label, out_dir, n_flows=150,
     wrpcap(str(out_path), packets)
 
     print(f"{source_pcap.name}: sampled {len(chosen)}/{available} flows "
-          f"({len(packets)} packets) -> {out_path}")
+          f"({len(packets)} packets) - {out_path}")
 
     return {
         "pcap_path": str(out_path),
@@ -129,5 +131,5 @@ def load_manifest(path=OUT_PATH):
         return json.load(f)
 
 if __name__ == "__main__":
-    records = sample_directory(SOURCE_ROOT, "evaluation/replay_pcaps", n_flows_per_pcap=150)
+    records = sample_directory(SOURCE_ROOT, "pre-selected/replay_pcaps", n_flows_per_pcap=150)
     build_manifest(records,OUT_PATH)
