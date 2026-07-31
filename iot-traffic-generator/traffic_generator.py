@@ -102,8 +102,7 @@ def _priority_key(job):
 
 
 def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
-    # replay every job in manifest.json in order, waiting
-    # SCHEDULER_DRAIN_SECONDS between jobs so flows from different scenarios
+    # replay every job in manifest.json in order, waiting SCHEDULER SECONDS between jobs so flows from different scenarios
     # never merge at the live capture side. Runs once, then returns unlike run_synthetic(), this does not loop forever.
     with open(manifest_path) as f:
         manifest = json.load(f)

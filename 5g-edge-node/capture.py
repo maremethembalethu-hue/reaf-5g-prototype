@@ -15,6 +15,8 @@ from flow_builder import FlowTable
 from model_engine import classify_flow
 from trigger import should_acquire
 from evidence_collect import collect_evidence
+from prediction_log import log_prediction
+
 
 sys.stdout.reconfigure(line_buffering=True)
 
@@ -43,6 +45,7 @@ reassembler = FragmentReassembler()
 
 def handle_finished_flow(flow):
     result = classify_flow(flow)
+    log_prediction(flow, result)
 
     ts = datetime.now(timezone.utc).isoformat()
     n_pkts = flow["packet_count"]
