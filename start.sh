@@ -55,9 +55,9 @@ docker rm -f reaf-traffic 2>/dev/null || true
 docker rm -f 5g-edge-node 2>/dev/null || true
 sleep 10
 
-echo " Samples a fixed number of *complete* flows from a source PCAP... "
+# echo " Samples a fixed number of *complete* flows from a source PCAP... "
 
-python3 iot-traffic-generator/flow_sampler.py
+# python3 iot-traffic-generator/flow_samples.py
 
 # Step 5: Start edge node inside UPF network namespace
 echo "5/6 Building and starting Edge Node and Traffic Generator..."
