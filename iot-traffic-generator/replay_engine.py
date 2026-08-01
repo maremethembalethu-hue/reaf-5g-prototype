@@ -30,6 +30,7 @@ BASE_DIR = Path(__file__).resolve().parent
 IFACE     = os.getenv("UE_TUNNEL_IFACE", "uesimtun0")
 TARGET_IP = os.getenv("TARGET_IP", "192.168.100.1")
 PCAP_DIR  = BASE_DIR / "pcaps"/ Path(os.getenv("PCAP_DIR", "pcaps"))
+ORIGINAL_UE = "192.168.137.175"
 
     # BASE_DIR / "pcaps" / "BenignTraffic.pcap",
     # BASE_DIR / "pcaps" / "DDoS-UDP_Flood.pcap",
@@ -72,39 +73,39 @@ def iter_packets(pcap_path):
         yield pkt, ts
 
 
-def rewrite_packet(pkt, ue_ip, target_ip=TARGET_IP):
+
+def rewrite_packet(pkt, ue_ip, target_ip):
+
     if IP not in pkt:
-        return None    
+        return None
+
     ip_pkt = pkt[IP].copy()
 
-    ORIGINAL_UE = "192.168.137.175"
-
+    # Outbound
     if ip_pkt.src == ORIGINAL_UE:
-        # outbound
         ip_pkt.src = ue_ip
         ip_pkt.dst = target_ip
 
+    # Inbound
     elif ip_pkt.dst == ORIGINAL_UE:
-        # inbound
-        #ip_pkt.src = target_ip
+        ip_pkt.src = target_ip
         ip_pkt.dst = ue_ip
 
+    # Any other packet
     else:
-        return None
+        # Still replay it
+        ip_pkt.src = ue_ip
+        ip_pkt.dst = target_ip
 
-    if hasattr(ip_pkt, "len"):
-        del ip_pkt.len
-
-    if hasattr(ip_pkt, "chksum"):
-        del ip_pkt.chksum
-    if hasattr(ip_pkt.payload, "chksum"):
-        del ip_pkt.payload.chksum
+    del ip_pkt.len
+    del ip_pkt.chksum
 
     if TCP in ip_pkt:
         del ip_pkt[TCP].chksum
 
-    elif UDP in ip_pkt:
+    if UDP in ip_pkt:
         del ip_pkt[UDP].chksum
+
     return ip_pkt
 
 
@@ -177,6 +178,7 @@ def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, u
             total += 1
             if prev_ts is not None:
                 delay = (ts - prev_ts) / replay_speed
+                log.info(f"Delay = {delay:.3f}s")
                 if delay > 0:
                     time.sleep(delay)
             prev_ts = ts
