@@ -1,20 +1,25 @@
 # Samples a fixed number of *complete* flows from a source PCAP, writing them
 # to a new, much smaller PCAP that replay_engine.py can replay
 
+# Peak memory is now bounded by,
+# not by the size of the source PCAP, so this no longer gets OOM-killed on
+# large shards.
+
 import random
 import json
 import time
 from pathlib import Path
+from collections import defaultdict
 
 from scapy.utils import PcapReader, wrpcap
 from scapy.all import IP, TCP, UDP
 
 
-
 RANDOM_STATE = 42
 SOURCE_ROOT = "./pcaps"
-OUT_PATH =  "pre-selected/manifest.json"
+OUT_PATH = "pre-selected/manifest.json"
 OUT_DIR_PCAP = "pre-selected/replay_pcaps"
+
 
 def flow_key(pkt):
     ip = pkt[IP]
@@ -28,14 +33,14 @@ def flow_key(pkt):
     endpoints = tuple(sorted([a, b]))
     return (ip.proto, endpoints[0], endpoints[1])
 
-def group_flows(source_pcap, max_packets=None):
-    #pass over the source PCAP, grouping packets by flow key
-    #  extremely large files may need chunked or
-    # streaming-to-disk grouping beyond what a single in-memory pass here
-    # supports
 
+def index_flows(source_pcap, max_packets=None):
+    #  stream the PCAP once and build an index of
+    # flow_key -> packet_count. No Scapy packet objects are retained, so
+    # memory usage stays roughly O(num_distinct_flows), not O(num_packets).
+    # 
     t0 = time.perf_counter()
-    flows = {}
+    counts = defaultdict(int)
     packets_scanned = 0
     with PcapReader(str(source_pcap)) as reader:
         for i, pkt in enumerate(reader):
@@ -44,47 +49,85 @@ def group_flows(source_pcap, max_packets=None):
             if IP not in pkt:
                 continue
             key = flow_key(pkt)
-            flows.setdefault(key, []).append(pkt)
+            counts[key] += 1
             packets_scanned += 1
+            # pkt goes out of scope here and is eligible for GC immediately -
+            # nothing keeps a reference to it beyond this loop iteration.
     elapsed = time.perf_counter() - t0
 
     rate = packets_scanned / elapsed if elapsed > 0 else 0.0
-    print(f"   group_flows: scanned {packets_scanned:,} packets -> "
-          f"{len(flows):,} flows in {elapsed:.3f}s ({rate:,.0f} pkts/sec)")
+    print(f"   index_flows: scanned {packets_scanned:,} packets to "
+          f"{len(counts):,} flows in {elapsed:.3f}s ({rate:,.0f} pkts/sec)")
 
-    return flows
+    return counts, packets_scanned
+
+
+def collect_chosen_packets(source_pcap, chosen_keys, max_packets=None):
+    # stream the PCAP a second time, keeping only packets whose
+    # flow_key is in chosen_keys. Memory usage is bounded by the size of the
+    # sampled flows, not the whole file.
+    t0 = time.perf_counter()
+    chosen_keys = set(chosen_keys)
+    packets = []
+    packets_scanned = 0
+    with PcapReader(str(source_pcap)) as reader:
+        for i, pkt in enumerate(reader):
+            if max_packets and i >= max_packets:
+                break
+            if IP not in pkt:
+                continue
+            packets_scanned += 1
+            key = flow_key(pkt)
+            if key in chosen_keys:
+                packets.append(pkt)
+    elapsed = time.perf_counter() - t0
+
+    rate = packets_scanned / elapsed if elapsed > 0 else 0.0
+    print(f"   collect_chosen_packets: rescanned {packets_scanned:,} packets, "
+          f"kept {len(packets):,} in {elapsed:.3f}s ({rate:,.0f} pkts/sec)")
+
+    return packets
+
 
 def sample_pcap(source_pcap, expected_label, out_dir, n_flows=150,
                  priority="normal", max_packets=2_000_000,
                  random_state=RANDOM_STATE):
-    # Samples up to n_flows complete flows from source_pcap and writes them, sorted by original relative timestam
+    # Samples up to n_flows complete flows from source_pcap and writes them,
+    # sorted by original relative timestamp. Uses a two-pass, memory-bounded
+    # algorithm so peak RAM does not scale with source PCAP size.
+
     t_total_start = time.perf_counter()
 
     source_pcap = Path(source_pcap)
-    print(f"[FILE] {source_pcap.name}  (expected_label={expected_label})")
+    print(f" {source_pcap.name}  (expected_label={expected_label})")
 
-    t_group_start = time.perf_counter()
-    flows = group_flows(source_pcap, max_packets=max_packets)
-    t_group_elapsed = time.perf_counter() - t_group_start
+    # Pass 1: index flow keys and their packet counts only.
+    t_index_start = time.perf_counter()
+    flow_counts, _packets_scanned = index_flows(source_pcap, max_packets=max_packets)
+    t_index_elapsed = time.perf_counter() - t_index_start
 
-    available = len(flows)
+    available = len(flow_counts)
     if available == 0:
-        print(f"[WARN] no IP flows found in {source_pcap}")
+        print(f" no IP flows found in {source_pcap}")
         return None
 
+    # Choose which flows to keep, based only on the lightweight index.
     t_sample_start = time.perf_counter()
     rng = random.Random(random_state)
-    keys = list(flows.keys())
+    keys = list(flow_counts.keys())
     chosen = rng.sample(keys, k=min(n_flows, available))
+    t_sample_elapsed = time.perf_counter() - t_sample_start
 
-    packets = [pkt for key in chosen for pkt in flows[key]]
+    # Pass 2: re-stream the file, materializing only the chosen flows' packets.
+    t_collect_start = time.perf_counter()
+    packets = collect_chosen_packets(source_pcap, chosen, max_packets=max_packets)
     packets.sort(key=lambda p: float(p.time))
 
     if packets:
         t0 = float(packets[0].time)
         for p in packets:
             p.time = float(p.time) - t0
-    t_sample_elapsed = time.perf_counter() - t_sample_start
+    t_collect_elapsed = time.perf_counter() - t_collect_start
 
     out_dir = Path(out_dir) / expected_label
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -94,17 +137,19 @@ def sample_pcap(source_pcap, expected_label, out_dir, n_flows=150,
     wrpcap(str(out_path), packets)
     t_write_elapsed = time.perf_counter() - t_write_start
 
+    # Packets list  can now be freed explicitly -
+    # helpful in sample_directory() where we loop over many large files.
+    del packets
+
     t_total_elapsed = time.perf_counter() - t_total_start
     sampling_ratio = (len(chosen) / available * 100) if available else 0.0
 
-    print(f"{source_pcap.name}: sampled {len(chosen)}/{available} flows "
-          f"({len(packets)} packets) - {out_path}")
+    print(f"{source_pcap.name}: sampled {len(chosen)}/{available} flows - {out_path}")
     print(f"   Flows available     : {available:,}")
     print(f"   Flows sampled       : {len(chosen):,}  ({sampling_ratio:.2f}% of available)")
-    print(f"   Packets in sample   : {len(packets):,}")
-    print(f"   Time (grouping)     : {t_group_elapsed:.3f}s")
+    print(f"   Time (indexing)     : {t_index_elapsed:.3f}s")
     print(f"   Time (sampling)     : {t_sample_elapsed:.3f}s")
-    print(f"   Time (writing pcap) : {t_write_elapsed:.3f}s")
+    print(f"   Time (collect+write): {t_collect_elapsed:.3f}s (incl. {t_write_elapsed:.3f}s write)")
     print(f"   Time (TOTAL, file)  : {t_total_elapsed:.3f}s")
     print("-" * 60)
 
@@ -113,17 +158,16 @@ def sample_pcap(source_pcap, expected_label, out_dir, n_flows=150,
         "expected_label": expected_label,
         "num_flows_sampled": len(chosen),
         "num_flows_available": available,
-        "num_packets": len(packets),
         "priority": priority,
         "elapsed_seconds": t_total_elapsed,
-        "group_flows_seconds": t_group_elapsed,
+        "index_seconds": t_index_elapsed,
         "sample_seconds": t_sample_elapsed,
-        "write_seconds": t_write_elapsed,
+        "collect_write_seconds": t_collect_elapsed,
     }
 
 
 def sample_directory(source_root, out_dir, n_flows_per_pcap=150, priority_map=None):
-   # Samples every .pcap found under each label subfolder of source_root.
+    # Samples every .pcap found under each label subfolder of source_root.
     priority_map = priority_map or {}
     records = []
 
@@ -151,7 +195,6 @@ def sample_directory(source_root, out_dir, n_flows_per_pcap=150, priority_map=No
 
     total_available = sum(r["num_flows_available"] for r in records)
     total_sampled = sum(r["num_flows_sampled"] for r in records)
-    total_packets = sum(r["num_packets"] for r in records)
     overall_ratio = (total_sampled / total_available * 100) if total_available else 0.0
     avg_time_per_file = (t_dir_elapsed / len(records)) if records else 0.0
 
@@ -162,7 +205,6 @@ def sample_directory(source_root, out_dir, n_flows_per_pcap=150, priority_map=No
     print(f" Total flows available       : {total_available:,}")
     print(f" Total flows sampled         : {total_sampled:,}")
     print(f" Overall flow sampling ratio : {overall_ratio:.2f}%")
-    print(f" Total packets in samples    : {total_packets:,}")
     print(f" Total wall-clock time       : {t_dir_elapsed:.3f}s")
     print(f" Average time per PCAP       : {avg_time_per_file:.3f}s")
     print("-" * 60)
@@ -170,11 +212,9 @@ def sample_directory(source_root, out_dir, n_flows_per_pcap=150, priority_map=No
     return records
 
 
-
-
 def build_manifest(sample_records, out_path=OUT_PATH):
-
-    # Assigns a sequential replay_id in the given order — reorder sample_records yourself beforehand if you want a specific run order.
+    # Assigns a sequential replay_id in the given order — reorder sample_records
+    # yourself beforehand if you want a specific run order.
     t0 = time.perf_counter()
 
     manifest = []
@@ -200,6 +240,7 @@ def build_manifest(sample_records, out_path=OUT_PATH):
 def load_manifest(path=OUT_PATH):
     with open(path) as f:
         return json.load(f)
+
 
 if __name__ == "__main__":
     t_run_start = time.perf_counter()
