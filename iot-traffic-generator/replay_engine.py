@@ -155,7 +155,7 @@ def replay_single_packet(pcap_path, iface=IFACE, target_ip=TARGET_IP, ue_ip=None
     return False
 
 
-def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, ue_ip=None, sock=None):
+def replay_pcap(pcap_path, replay_speed=100, target_ip=TARGET_IP, iface=IFACE, ue_ip=None, sock=None):
     ue_ip = ue_ip or get_ue_ip(iface)
     if ue_ip is None:
         log.error(f"Could not resolve UE IP on {iface}; aborting replay")
@@ -178,9 +178,18 @@ def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, u
             total += 1
             if prev_ts is not None:
                 delay = (ts - prev_ts) / replay_speed
+                
+                
+                delay = (ts - prev_ts) / replay_speed
+
+                MAX_DELAY = 0.05      # 50 ms
+
+                if delay > MAX_DELAY:
+                    delay = MAX_DELAY
+
+                time.sleep(delay)
                 log.info(f"Delay = {delay:.3f}s")
-                if delay > 0:
-                    time.sleep(delay)
+               
             prev_ts = ts
 
             out_pkt = rewrite_packet(pkt, ue_ip, target_ip)
