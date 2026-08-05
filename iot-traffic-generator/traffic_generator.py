@@ -33,6 +33,9 @@ MODE         = "manifest"
 PCAP_PATH    = os.getenv("PCAP_PATH", "pcaps/Benign/BenignTraffic.pcap")
 REPLAY_SPEED = float(os.getenv("REPLAY_SPEED", "1.0"))
 
+
+MAX_RUNTIME_SECONDS = float(os.getenv("MAX_RUNTIME_SECONDS", "0"))
+RUN_START_TIME = time.time()
 MIXED_SEQUENCE = [
     "pcaps/benign/BenignTraffic.pcap",
     "pcaps/ddos/DDOS-UDP_Flood.pcap",
@@ -43,10 +46,9 @@ MIXED_SEQUENCE = [
 # evaluation/ folder needs to be mounted into this container.
 MANIFEST_PATH = os.getenv("MANIFEST_PATH", "pre-selected/manifest.json")
 
-current_dir = Path(__file__).parent
-truth_dir =  current_dir.parent / "evaluation"
-truth_dir.mkdir(exist_ok=True)
-TRUTH_LOG = truth_dir / "truth_log.jsonl"
+EVAL_DIR = Path(os.getenv("EVAL_DIR", "/evaluation"))
+EVAL_DIR.mkdir(parents=True, exist_ok=True)
+TRUTH_LOG = EVAL_DIR / "truth_log.jsonl"
 
 # IDLE TIMEOUT SECONDS plus, the next job's traffic can arrive before the previous
 # last flow has gone idle at the live capture side.
@@ -59,7 +61,10 @@ def get_ue_ip():
         if "inet " in line and "inet6" not in line:
             return line.strip().split()[1].split("/")[0]
     return None
-
+def time_expired():
+    if MAX_RUNTIME_SECONDS <= 0:
+        return False
+    return (time.time() - RUN_START_TIME) >= MAX_RUNTIME_SECONDS
 
 def tx(packet, msg):
     send(packet, iface=IFACE, verbose=False)
@@ -107,17 +112,39 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
     # replay every job in manifest.json in order, waiting SCHEDULER SECONDS between jobs so flows from different scenarios
     # never merge at the live capture side. Runs once, then returns unlike run_synthetic(), this does not loop forever.
     with open(manifest_path) as f:
-        manifest = json.load(f)
+        data = json.load(f)
+    manifest = data["jobs"]
     manifest = sorted(manifest, key=_priority_key)
 
     for job in manifest:
+
+        if time_expired():
+            log.warning(f"MAX_RUNTIME_SECONDS={MAX_RUNTIME_SECONDS:.0f}s reached before all jobs "
+                        f"finished — stopping early at replay_id={job['replay_id']}.")
+            break
+
         log.info(f"--- Replay {job['replay_id']}: {job['pcap_path']} "
                  f"(expected={job['expected_label']}, flows={job['num_flows']}) ---")
+
+        deadline = (RUN_START_TIME + MAX_RUNTIME_SECONDS) if MAX_RUNTIME_SECONDS > 0 else None
 
         start_ts = datetime.now(timezone.utc).isoformat()
         start_time = time.time()
 
-        replay_pcap(job["pcap_path"], replay_speed=replay_speed, target_ip=TARGET_IP, iface=IFACE)
+        # Written immediately, before replay_pcap() runs, so this job's window
+        # survives a crash/Ctrl+C/docker stop even if replay_pcap() never returns.
+        started_record = {
+            "replay_id": job["replay_id"], "pcap_path": job["pcap_path"],
+            "expected_label": job["expected_label"], "num_flows_sent": job["num_flows"],
+            "status": "started",
+            "start_ts": start_ts, "start_time": start_time,
+        }
+        with open(TRUTH_LOG, "a") as f:
+            f.write(json.dumps(started_record) + "\n")
+            f.flush()
+
+        replay_pcap(job["pcap_path"], replay_speed=replay_speed, target_ip=TARGET_IP, iface=IFACE,
+                    deadline=deadline)
 
         log.info(f"Replay {job['replay_id']} sent; waiting {SCHEDULER_DRAIN_SECONDS}s "
                  f"for the flow table to drain before the next job...")
@@ -129,14 +156,13 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
         record = {
             "replay_id": job["replay_id"], "pcap_path": job["pcap_path"],
             "expected_label": job["expected_label"], "num_flows_sent": job["num_flows"],
-            "start_ts": start_ts, "end_ts": end_ts,
-            "start_time": start_time, "end_time": end_time,
+            "status": "completed",
+            "start_ts": start_ts, "start_time": start_time,
+            "end_ts": end_ts, "end_time": end_time,
         }
         with open(TRUTH_LOG, "a") as f:
             f.write(json.dumps(record) + "\n")
-
-    log.info(f"All {len(manifest)} replay jobs complete. Ground truth: {TRUTH_LOG}")
-
+            f.flush()
 
 def main():
     log.info(f"Mode: {MODE}")

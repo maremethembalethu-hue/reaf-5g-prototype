@@ -14,6 +14,7 @@ services:
     privileged: true
     volumes:
       - ./evidence:/evidence
+      - ./evaluation:/evaluation
     environment:
       - CAPTURE_IFACE=ogstun
       - EVIDENCE_DIR=/evidence
@@ -38,10 +39,14 @@ services:
     network_mode: "container:nr_ue"
     cap_add:
       - NET_ADMIN
+    volumes:
+      - ./evaluation:/evaluation
     environment:
       - UE_TUNNEL_IFACE=uesimtun0
       - TARGET_IP=${TARGET_IP:-192.168.100.1}
       - MODE=${MODE:-synthetic}
       - SEND_INTERVAL=2
       - REPLAY_SPEED=1.0
-    restart: unless-stopped
+      - MAX_RUNTIME_SECONDS=1200
+      - PCAP_PATH=pcaps/Benign/BenignTraffic.pcap
+    restart: "no"

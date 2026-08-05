@@ -19,3 +19,4 @@ venv/
 # Large project directories
 evidence/
 models/
+pcaps/

@@ -21,7 +21,7 @@ TIMING_REPORT_PATH = "pre-selected/timing_report.json"
 
 
 TARGET_IDLE_TIMEOUT_DEFAULT = 2.0   # seconds; your current IDLE_TIMEOUT_SECONDS
-GAP_PERCENTILE_DEFAULT = 99.0       # which percentile of inter-arrival gaps to design around
+GAPpercentile_DEFAULT = 99.0       # which percentile of inter-arrival gaps to design around
 SAFETY_MARGIN_DEFAULT = 1.2         # headroom multiplier over the raw percentile
 
 
@@ -115,7 +115,7 @@ def collect_chosen_packets(source_pcap, chosen_keys, max_packets=None):
     return packets
 
 
-def _percentile(sorted_values, p):
+def percentile(sorted_values, p):
     #Linear-interpolated percentile over an already-sorted list. Fine for the flow-count scales we deal with here.
     if not sorted_values:
         return 0.0
@@ -130,7 +130,7 @@ def _percentile(sorted_values, p):
     return sorted_values[lo] + (sorted_values[hi] - sorted_values[lo]) * frac
 
 
-def _round_up_nice(value, step=0.5):
+def round_up_nice(value, step=0.5):
     if value <= 0:
         return step
     import math
@@ -146,8 +146,8 @@ def summarize_timing(flow_stats, percentiles=(50, 90, 95, 99, 99.9, 100)):
 
     return {
         "num_flows": len(flow_stats),
-        "duration_percentiles": {f"p{p}": round(_percentile(durations, p), 4) for p in percentiles},
-        "max_gap_percentiles": {f"p{p}": round(_percentile(max_gaps, p), 4) for p in percentiles},
+        "durationpercentiles": {f"p{p}": round(percentile(durations, p), 4) for p in percentiles},
+        "max_gappercentiles": {f"p{p}": round(percentile(max_gaps, p), 4) for p in percentiles},
         "_durations_sorted": durations,   # kept for recommend_replay_params; strip before dumping to disk
         "_max_gaps_sorted": max_gaps,
     }
@@ -155,7 +155,7 @@ def summarize_timing(flow_stats, percentiles=(50, 90, 95, 99, 99.9, 100)):
 
 def recommend_replay_params(timing_summary,
                              target_idle_timeout=TARGET_IDLE_TIMEOUT_DEFAULT,
-                             gap_percentile=GAP_PERCENTILE_DEFAULT,
+                             gappercentile=GAPpercentile_DEFAULT,
                              safety_margin=SAFETY_MARGIN_DEFAULT):
     #Given a timing_summary 
     #This is deliberately a statistics-based estimate, not a prediction model:
@@ -168,12 +168,12 @@ def recommend_replay_params(timing_summary,
             "suggested_idle_timeout": target_idle_timeout,
             "suggested_replay_speed": 1.0,
             "expected_split_flows_pct": 0.0,
-            "basis_gap_percentile_value": 0.0,
+            "basis_gappercentile_value": 0.0,
         }
 
-    p_gap = _percentile(gaps, gap_percentile)
+    p_gap = percentile(gaps, gappercentile)
 
-    suggested_idle_timeout = _round_up_nice(p_gap * safety_margin, step=0.5)
+    suggested_idle_timeout = round_up_nice(p_gap * safety_margin, step=0.5)
 
     if p_gap <= 0:
         suggested_replay_speed = 1.0
@@ -191,8 +191,8 @@ def recommend_replay_params(timing_summary,
         "suggested_idle_timeout": suggested_idle_timeout,
         "suggested_replay_speed": suggested_replay_speed,
         "expected_split_flows_pct": expected_split_flows_pct,
-        "basis_gap_percentile": gap_percentile,
-        "basis_gap_percentile_value": round(p_gap, 4),
+        "basis_gappercentile": gappercentile,
+        "basis_gappercentile_value": round(p_gap, 4),
         "target_idle_timeout_used": target_idle_timeout,
         "safety_margin_used": safety_margin,
     }
@@ -207,12 +207,12 @@ def sample_pcap(source_pcap, expected_label, out_dir, n_flows=150,
                  priority="normal", max_packets=2_000_000,
                  random_state=RANDOM_STATE,
                  target_idle_timeout=TARGET_IDLE_TIMEOUT_DEFAULT,
-                 gap_percentile=GAP_PERCENTILE_DEFAULT,
+                 gappercentile=GAPpercentile_DEFAULT,
                  safety_margin=SAFETY_MARGIN_DEFAULT):
-    """Samples up to n_flows complete flows from source_pcap and writes them,
-    sorted by original relative timestamp. Also returns per-file timing
-    statistics and a replay-parameter recommendation derived from them.
-    """
+    # Samples up to n_flows complete flows from source_pcap and writes them,
+    # sorted by original relative timestamp. Also returns per-file timing
+    # statistics and a replay-parameter recommendation derived from them.
+    
     t_total_start = time.perf_counter()
 
     source_pcap = Path(source_pcap)
@@ -261,7 +261,7 @@ def sample_pcap(source_pcap, expected_label, out_dir, n_flows=150,
     timing_summary = summarize_timing(flow_stats)
     recommendation = recommend_replay_params(
         timing_summary, target_idle_timeout=target_idle_timeout,
-        gap_percentile=gap_percentile, safety_margin=safety_margin,
+        gappercentile=gappercentile, safety_margin=safety_margin,
     )
 
     t_total_elapsed = time.perf_counter() - t_total_start
@@ -274,7 +274,7 @@ def sample_pcap(source_pcap, expected_label, out_dir, n_flows=150,
     print(f"   Time (sampling)     : {t_sample_elapsed:.3f}s")
     print(f"   Time (collect+write): {t_collect_elapsed:.3f}s (incl. {t_write_elapsed:.3f}s write)")
     print(f"   Time (TOTAL, file)  : {t_total_elapsed:.3f}s")
-    print(f"   Gap p{gap_percentile}            : {recommendation['basis_gap_percentile_value']:.3f}s")
+    print(f"   Gap p{gappercentile}            : {recommendation['basis_gappercentile_value']:.3f}s")
     print(f"   Suggested idle_timeout : {recommendation['suggested_idle_timeout']:.2f}s")
     print(f"   Suggested replay_speed : {recommendation['suggested_replay_speed']:.2f}x")
     print(f"   Expected split flows   : {recommendation['expected_split_flows_pct']:.2f}%")
@@ -300,7 +300,7 @@ def sample_pcap(source_pcap, expected_label, out_dir, n_flows=150,
 
 def sample_directory(source_root, out_dir, n_flows_per_pcap=150, priority_map=None,
                       target_idle_timeout=TARGET_IDLE_TIMEOUT_DEFAULT,
-                      gap_percentile=GAP_PERCENTILE_DEFAULT,
+                      gappercentile=GAPpercentile_DEFAULT,
                       safety_margin=SAFETY_MARGIN_DEFAULT):
     # Samples every .pcap found under each label subfolder of source_root.
     priority_map = priority_map or {}
@@ -322,7 +322,7 @@ def sample_directory(source_root, out_dir, n_flows_per_pcap=150, priority_map=No
         rec = sample_pcap(
             pcap_path, expected_label=label, out_dir=out_dir,
             n_flows=n_flows_per_pcap, priority=priority_map.get(label, "normal"),
-            target_idle_timeout=target_idle_timeout, gap_percentile=gap_percentile,
+            target_idle_timeout=target_idle_timeout, gappercentile=gappercentile,
             safety_margin=safety_margin,
         )
         if rec:
@@ -359,13 +359,13 @@ def sample_directory(source_root, out_dir, n_flows_per_pcap=150, priority_map=No
     global_timing_summary = summarize_timing(global_flow_stats)
     global_recommendation = recommend_replay_params(
         global_timing_summary, target_idle_timeout=target_idle_timeout,
-        gap_percentile=gap_percentile, safety_margin=safety_margin,
+        gappercentile=gappercentile, safety_margin=safety_margin,
     )
 
     print(" DATASET-WIDE REPLAY PARAMETER RECOMMENDATION")
     print("-" * 60)
     print(f" Flows analysed          : {global_timing_summary['num_flows']:,}")
-    print(f" Gap p{gap_percentile}                : {global_recommendation['basis_gap_percentile_value']:.3f}s")
+    print(f" Gap p{gappercentile}                : {global_recommendation['basis_gappercentile_value']:.3f}s")
     print(f" Suggested idle_timeout  : {global_recommendation['suggested_idle_timeout']:.2f}s")
     print(f" Suggested replay_speed  : {global_recommendation['suggested_replay_speed']:.2f}x")
     print(f" Expected split flows    : {global_recommendation['expected_split_flows_pct']:.2f}%")

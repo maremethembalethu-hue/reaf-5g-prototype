@@ -710,7 +710,9 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     # Splits
     train, val, test = split_ciciot(ciciot)
     ft, ext_val, ext_test = split_ids2018(ids2018)
-
+    print(train["Label"].value_counts())
+    # specifically:
+    print(train[train["Label"].isin(["BenignTraffic", "Benign_Final"])]["Label"].value_counts())
     # Target encoding
     label_encoder = LabelEncoder()
     train = train.copy(); val = val.copy(); test = test.copy()
@@ -751,6 +753,8 @@ def run_pipeline(sample_frac_ciciot=0.05, sample_frac_ids2018=0.3, optuna_trials
     train_l = apply_scaler(train, lite_features, lite_scaler)
     val_l = apply_scaler(val, lite_features, lite_scaler)
     test_l = apply_scaler(test, lite_features, lite_scaler)
+    
+    
 
     # XGBoost Model (Heavy): GPU-accelerated, inverse-frequency sample weighted
     best_params = tune_heavy_model(train_h[heavy_features], train_h["y"],

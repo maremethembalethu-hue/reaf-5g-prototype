@@ -6,13 +6,9 @@ import os
 import json
 from pathlib import Path
 
-current_dir = Path(__file__).parent
-truth_dir =  current_dir.parent / "evaluation"
-truth_dir.mkdir(exist_ok=True)
-PREDICTIONS_LOG = truth_dir / "predictions_log.jsonl"
+PREDICTIONS_LOG = Path(os.getenv("PREDICTIONS_LOG", "/evaluation/predictions_log.jsonl"))
+PREDICTIONS_LOG.parent.mkdir(parents=True, exist_ok=True)
 
-
-PREDICTIONS_LOG = Path(os.getenv("PREDICTIONS_LOG", "/evidence/predictions_log.jsonl"))
 
 
 def log_prediction(flow: dict, result: dict):
@@ -25,6 +21,6 @@ def log_prediction(flow: dict, result: dict):
         "confidence": result["confidence"],
         "model_used": result["model_used"],
     }
-    PREDICTIONS_LOG.parent.mkdir(parents=True, exist_ok=True)
-    with open(PREDICTIONS_LOG, "a") as f:
+
+    with open(PREDICTIONS_LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps(record) + "\n")

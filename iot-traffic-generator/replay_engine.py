@@ -154,8 +154,8 @@ def replay_single_packet(pcap_path, iface=IFACE, target_ip=TARGET_IP, ue_ip=None
     print("FAIL: pcap contained no IP packets (or was empty)")
     return False
 
-
-def replay_pcap(pcap_path, replay_speed=100, target_ip=TARGET_IP, iface=IFACE, ue_ip=None, sock=None):
+def replay_pcap(pcap_path, replay_speed=100, target_ip=TARGET_IP, iface=IFACE, ue_ip=None, sock=None,
+                 deadline=None):
     ue_ip = ue_ip or get_ue_ip(iface)
     if ue_ip is None:
         log.error(f"Could not resolve UE IP on {iface}; aborting replay")
@@ -175,6 +175,10 @@ def replay_pcap(pcap_path, replay_speed=100, target_ip=TARGET_IP, iface=IFACE, u
 
     try:
         for pkt, ts in iter_packets(pcap_path):
+            if deadline is not None and time.time() >= deadline:
+                log.warning(f"REPLAY | {Path(pcap_path).name} | deadline reached — "
+                            f"stopping mid-file at packet {total} (sent={sent})")
+                break
             total += 1
             if prev_ts is not None:
                 delay = (ts - prev_ts) / replay_speed
@@ -197,21 +201,19 @@ def replay_pcap(pcap_path, replay_speed=100, target_ip=TARGET_IP, iface=IFACE, u
                 skipped += 1
                 continue
 
+            raw_bytes = bytes(out_pkt)
             try:
-                
-                if len(bytes(out_pkt)) > 1300:
-                    fragments = fragment(out_pkt, fragsize=1300)
-
-                    for frag in fragments:
-                        sock.send(frag)
+                if len(raw_bytes) > 1300:
+                    for frag in fragment(out_pkt, fragsize=1300):
+                        sock.outs.sendto(bytes(frag), (frag.dst, 0))
                 else:
-                    sock.send(out_pkt)
-        
+                    sock.outs.sendto(raw_bytes, (out_pkt.dst, 0))
                 sent += 1
                 log.info(f"REPLAY | {ue_ip} - {target_ip} | {out_pkt.summary()}")
             except OSError as e:
                 errors += 1
-                log.error(f"send() failed on packet {total}: {e}")
+                if errors <= 3 or errors % 50 == 0:
+                    log.error(f"send() failed on packet {total}: {e}")
     finally:
         if own_socket:
             sock.close()
