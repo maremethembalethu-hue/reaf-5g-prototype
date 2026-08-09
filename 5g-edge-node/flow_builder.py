@@ -1,123 +1,156 @@
-# Aggregates individual packets into flow records, the same unit of analysis CICIoT2023 and CSE-CIC-IDS2018 were built on. A "flow" is identified by the
-# 5-tuple (protocol, endpoint A, endpoint B) with both directions folded into one record
+#Groups incoming packets into fixed-size WINDOWS of WINDOW_SIZE consecutive packets and 
+#extracts the raw per-packet values feature_extractor.py needs to aggregate each window into a named feature vector.
+
 
 import time
 from scapy.all import IP, TCP, UDP
 
-MAX_PACKETS_PER_FLOW    = 20
-IDLE_TIMEOUT_SECONDS     = 10
-MAX_FLOW_DURATION_SECONDS = 30.0
-MAX_STORED_PACKETS       = 200
-
-TCP_FLAG_BITS = {
-    "fin": 0x01, "syn": 0x02, "rst": 0x04, "psh": 0x08,
-    "ack": 0x10, "urg": 0x20, "ece": 0x40, "cwr": 0x80,
-}
+from feature_extractor import aggregate_window
 
 
-def flow_key(pkt):
-   # 5-tuple flow key, both directions of a conversation map to the same flow (protocol, sorted (ip, port) pair, sorted (ip, port) pair).
+WINDOW_SIZE = 10
+
+IDLE_FLUSH_SECONDS = 2.0
+
+SERVICE_PORTS_NOTE = (
+    "IRC below intentionally checks port 21 (FTP's control port, not IRC's) "
+    "-- this reproduces a quirk/bug in the ground-truth extractor "
+    "(Layered_features.py's L4.IRC()) on purpose, so our numbers match the "
+    "training data's."
+)
+
+
+def _is_port(sport, dport, port):
+    return 1 if (sport == port or dport == port) else 0
+
+
+def build_packet_row(pkt, ts, last_pac_time):
+    #Computes one row of raw per-packet values a direct port of the per-packet section of Feature_extraction.py's pcap_evaluation() loop.
+    
     ip = pkt[IP]
-    if TCP in pkt:
-        sport, dport = pkt[TCP].sport, pkt[TCP].dport
-    elif UDP in pkt:
-        sport, dport = pkt[UDP].sport, pkt[UDP].dport
-    else:
-        sport, dport = 0, 0
-    a, b = (ip.src, sport), (ip.dst, dport)
-    endpoints = tuple(sorted([a, b]))
-    return (ip.proto, endpoints[0], endpoints[1])
+    iat = 0.0 if last_pac_time is None else max(0.0, ts - last_pac_time)
 
-
-def new_flow(pkt, ts):
-    ip = pkt[IP]
-    if TCP in pkt:
-        sport = pkt[TCP].sport
-    elif UDP in pkt:
-        sport = pkt[UDP].sport
-    else:
-        sport = 0
-    return {
-        "start_time": ts,
-        "last_time": ts,
-        "proto": ip.proto,
-        "initiator": (ip.src, sport),   # defines the "forward" direction
-        "packet_count": 0,
-        "lengths": [],
-        "header_lengths": [],
-        "interarrival": [],
-        "fwd_count": 0, "bwd_count": 0,
-        "fwd_bytes": 0, "bwd_bytes": 0,
-        "flags": {k: 0 for k in TCP_FLAG_BITS},
-        "packets": [],
+    row = {
+        "ts": ts,
+        "Header_Length": 0,          # only set for TCP/UDP below; 0 for ICMP etc,
+                                      # matching the original code's per-packet reset
+        "Protocol Type": ip.proto,
+        "Time_To_Live": getattr(ip, "ttl", 0),
+        "Rate": 0.0,                 # filled in at window-aggregation time only
+        "fin_flag_number": 0, "syn_flag_number": 0, "rst_flag_number": 0,
+        "psh_flag_number": 0, "ack_flag_number": 0, "ece_flag_number": 0,
+        "cwr_flag_number": 0,
+        "ack_count": 0, "syn_count": 0, "fin_count": 0, "rst_count": 0,
+        "HTTP": 0, "HTTPS": 0, "DNS": 0, "Telnet": 0, "SMTP": 0, "SSH": 0,
+        "IRC": 0, "TCP": 0, "UDP": 0, "DHCP": 0, "ARP": 0, "ICMP": 0,
+        "IGMP": 0, "IPv": 1, "LLC": 0,
+        "Tot size": len(pkt),        # full captured frame size, matching the
+                                      # original extractor's len(buf); no
+                                      # Ethernet-header compensation needed here
+                                      # since this is real sniffed traffic, not a
+                                      # reconstructed IP-only packet
+        "IAT": iat,
+        "Number": 1,
     }
 
+    if ip.proto == 1:
+        row["ICMP"] = 1
+    elif ip.proto == 2:
+        row["IGMP"] = 1
 
-class FlowTable:
-    def __init__(self, max_packets=MAX_PACKETS_PER_FLOW,
-                 idle_timeout=IDLE_TIMEOUT_SECONDS,
-                 max_duration=MAX_FLOW_DURATION_SECONDS):
-        self.flows = {}
-        self.max_packets = max_packets
-        self.idle_timeout = idle_timeout
-        self.max_duration = max_duration
+    if UDP in pkt:
+        row["UDP"] = 1
+        row["Header_Length"] = 8   # fixed for UDP, matches Connectivity_features_basic
+        udp = pkt[UDP]
+        sport, dport = udp.sport, udp.dport
+        row["DNS"] = _is_port(sport, dport, 53)
+        row["DHCP"] = 1 if ((sport, dport) == (67, 68) or (sport, dport) == (68, 67)) else 0
+
+    elif TCP in pkt:
+        row["TCP"] = 1
+        tcp = pkt[TCP]
+        dataofs = tcp.dataofs if tcp.dataofs else 5   # 5 * 4 = 20 bytes, TCP's default
+        row["Header_Length"] = int(dataofs) * 4
+
+        flags = tcp.flags
+        row["fin_flag_number"] = int(bool(flags & 0x01))
+        row["syn_flag_number"] = int(bool(flags & 0x02))
+        row["rst_flag_number"] = int(bool(flags & 0x04))
+        row["psh_flag_number"] = int(bool(flags & 0x08))
+        row["ack_flag_number"] = int(bool(flags & 0x10))
+        row["ece_flag_number"] = int(bool(flags & 0x40))
+        row["cwr_flag_number"] = int(bool(flags & 0x80))
+
+        # per-packet *_count == the corresponding *_flag_number (0 or 1);
+        # the distinction only appears after window aggregation, where
+        # *_count gets SUMMED and *_flag_number gets AVERAGED (see
+        # aggregate_window() in feature_extractor.py).
+        row["ack_count"] = row["ack_flag_number"]
+        row["syn_count"] = row["syn_flag_number"]
+        row["fin_count"] = row["fin_flag_number"]
+        row["rst_count"] = row["rst_flag_number"]
+
+        sport, dport = tcp.sport, tcp.dport
+        row["HTTP"] = _is_port(sport, dport, 80)
+        row["HTTPS"] = _is_port(sport, dport, 443)
+        row["SSH"] = _is_port(sport, dport, 22)
+        row["IRC"] = _is_port(sport, dport, 21)  # see SERVICE_PORTS_NOTE above
+        row["Telnet"] = _is_port(sport, dport, 23)
+        row["SMTP"] = _is_port(sport, dport, 25)
+
+    return row, ts
+
+
+class WindowBuilder:
+    #Buffers packets into fixed-size windows and hands back an aggregated window record once WINDOW_SIZE packets have arrived.
+    def __init__(self, window_size=WINDOW_SIZE, idle_flush_seconds=IDLE_FLUSH_SECONDS):
+        self.window_size = window_size
+        self.idle_flush_seconds = idle_flush_seconds
+        self._rows = []
+        self._packets = []
+        self._last_pac_time = None
 
     def add_packet(self, pkt, ts=None):
-        # Feed one packet in. Returns a finished flow record if this packet completed a flow else None.
+        #Feed one packet in. Returns a finished window record once window_size packets have been buffered, else None.
         if IP not in pkt:
             return None
         ts = ts if ts is not None else time.time()
-        key = flow_key(pkt)
 
-        flow = self.flows.get(key)
-        if flow is None:
-            flow = new_flow(pkt, ts)
-            self.flows[key] = flow
+        row, self._last_pac_time = build_packet_row(pkt, ts, self._last_pac_time)
+        self._rows.append(row)
+        self._packets.append(pkt)
 
-        ip = pkt[IP]
-        length = len(pkt)
-
-        if flow["packet_count"] > 0:
-            flow["interarrival"].append(ts - flow["last_time"])
-        flow["last_time"] = ts
-        flow["packet_count"] += 1
-        flow["lengths"].append(length)
-        flow["header_lengths"].append(ip.ihl * 4)
-
-        if TCP in pkt:
-            tcp_flags = int(pkt[TCP].flags)
-            for name, bit in TCP_FLAG_BITS.items():
-                if tcp_flags & bit:
-                    flow["flags"][name] += 1
-            sport = pkt[TCP].sport
-        elif UDP in pkt:
-            sport = pkt[UDP].sport
-        else:
-            sport = 0
-
-        if (ip.src, sport) == flow["initiator"]:
-            flow["fwd_count"] += 1
-            flow["fwd_bytes"] += length
-        else:
-            flow["bwd_count"] += 1
-            flow["bwd_bytes"] += length
-
-        if len(flow["packets"]) < MAX_STORED_PACKETS:
-            flow["packets"].append(pkt)
-
-        duration = flow["last_time"] - flow["start_time"]
-        if flow["packet_count"] >= self.max_packets or duration >= self.max_duration:
-            del self.flows[key]
-            return flow
+        if len(self._rows) >= self.window_size:
+            return self._finalize()
         return None
 
-    def expire_stale_flows(self, now=None):
-       # Call periodically to finalize flows that have gone idle. Returns a list of finished flow records.
+    def expire_stale_partial_window(self, now=None):
+        #Call periodically to flush a trailing partial window during a traffic.         
+	    
+        if not self._rows:
+            return None
+        
         now = now if now is not None else time.time()
-        finished = []
-        for key in list(self.flows.keys()):
-            flow = self.flows[key]
-            if now - flow["last_time"] >= self.idle_timeout:
-                finished.append(flow)
-                del self.flows[key]
-        return finished
+        if now - self._rows[-1]["ts"] >= self.idle_flush_seconds:
+            return self._finalize()
+        return None
+
+    def flush(self):
+        #Unconditionally finalize whatever's currently buffered, even if it's short of window_size.
+        if self._rows:
+            return self._finalize()
+        return None
+
+    def _finalize(self):
+        features = aggregate_window(self._rows)
+        window = {
+            "packet_count": len(self._rows),
+            "start_time": self._rows[0]["ts"],
+            "last_time": self._rows[-1]["ts"],
+            "proto": features["Protocol Type"],
+            "packets": self._packets,
+            "features": features,
+        }
+        self._rows = []
+        self._packets = []
+        return window
