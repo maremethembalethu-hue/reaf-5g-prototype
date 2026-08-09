@@ -64,13 +64,13 @@ def _load_artifacts():
 _load_artifacts()
  
  
-def _decode_label(pred_class: int) -> str:
+def _decode_label(pred_class):
     if _label_encoder is not None:
         return str(_label_encoder.inverse_transform([pred_class])[0])
     return f"class_{pred_class}"
  
  
-def classify_flow(window: dict) -> dict:
+def classify_flow(window) :
     # Run inference on one finished WINDOW record purely so capture.py's
     # existing `from model_engine import classify_flow` import keeps working
     # unchanged.

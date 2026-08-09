@@ -63,20 +63,20 @@ def aggregate_window(rows):
     return agg
  
  
-def compute_base_features(window: dict) -> dict:
+def compute_base_features(window):
    
     return window["features"]
  
  
-def vectorize(feats: dict, feature_list) -> np.ndarray:
-    """Orders a feature dict into the exact column order a model expects."""
+def vectorize(feats, feature_list) :
+    # Orders a feature dict into the exact column order a model expects.
     return np.array([feats.get(f, 0.0) for f in feature_list], dtype=np.float32).reshape(1, -1)
  
  
-def extract_heavy(window: dict) -> np.ndarray:
+def extract_heavy(window):
     return vectorize(compute_base_features(window), HEAVY_FEATURES)
  
  
-def extract_lite(window: dict) -> np.ndarray:
+def extract_lite(window) :
     return vectorize(compute_base_features(window), LITE_FEATURES)
  

@@ -154,8 +154,10 @@ def replay_single_packet(pcap_path, iface=IFACE, target_ip=TARGET_IP, ue_ip=None
     print("FAIL: pcap contained no IP packets (or was empty)")
     return False
 
-def replay_pcap(pcap_path, replay_speed=100, target_ip=TARGET_IP, iface=IFACE, ue_ip=None, sock=None,
-                 deadline=None):
+def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE,
+                ue_ip=None, sock=None, deadline=None,
+                max_delay=None, preserve_timing=True):
+    
     ue_ip = ue_ip or get_ue_ip(iface)
     if ue_ip is None:
         log.error(f"Could not resolve UE IP on {iface}; aborting replay")
@@ -166,7 +168,9 @@ def replay_pcap(pcap_path, replay_speed=100, target_ip=TARGET_IP, iface=IFACE, u
     if own_socket:
         sock = make_socket(iface)
 
-    log.info(f"REPLAY | {Path(pcap_path).name} | {ue_ip} -> {target_ip} | speed={replay_speed}x")
+    log.info(f"REPLAY | {Path(pcap_path).name} | {ue_ip} -> {target_ip} | "
+             f"speed={replay_speed}x | preserve_timing={preserve_timing}")
+
     prev_ts = None
     sent = 0
     skipped = 0
@@ -179,22 +183,21 @@ def replay_pcap(pcap_path, replay_speed=100, target_ip=TARGET_IP, iface=IFACE, u
                 log.warning(f"REPLAY | {Path(pcap_path).name} | deadline reached — "
                             f"stopping mid-file at packet {total} (sent={sent})")
                 break
+
             total += 1
-            if prev_ts is not None:
-                delay = (ts - prev_ts) / replay_speed
-                
-                
-                delay = (ts - prev_ts) / replay_speed
 
-                MAX_DELAY = 0.05      # 50 ms
+            # ---------- timing control ----------
+            if preserve_timing and prev_ts is not None:
+                delay = (ts - prev_ts) / max(replay_speed, 1e-6)
 
-                if delay > MAX_DELAY:
-                    delay = MAX_DELAY
+                if max_delay is not None and delay > max_delay:
+                    delay = max_delay
 
-                time.sleep(delay)
-                log.info(f"Delay = {delay:.3f}s")
-               
+                if delay > 0:
+                    time.sleep(delay)
+
             prev_ts = ts
+            # ------------------------------------
 
             out_pkt = rewrite_packet(pkt, ue_ip, target_ip)
             if out_pkt is None:
@@ -209,18 +212,18 @@ def replay_pcap(pcap_path, replay_speed=100, target_ip=TARGET_IP, iface=IFACE, u
                 else:
                     sock.outs.sendto(raw_bytes, (out_pkt.dst, 0))
                 sent += 1
-                log.info(f"REPLAY | {ue_ip} - {target_ip} | {out_pkt.summary()}")
             except OSError as e:
                 errors += 1
                 if errors <= 3 or errors % 50 == 0:
                     log.error(f"send() failed on packet {total}: {e}")
+
     finally:
         if own_socket:
             sock.close()
 
     log.info(f"REPLAY | {Path(pcap_path).name} complete "
-             f"(read={total}, sent={sent}, skipped_non_ip={skipped}, errors={errors}, "
-             f"expected_attack={metadata.get('expected_attack', 'unknown')})")
+             f"(read={total}, sent={sent}, skipped_non_ip={skipped}, "
+             f"errors={errors}, expected_attack={metadata.get('expected_attack', 'unknown')})")
     return sent
 
 

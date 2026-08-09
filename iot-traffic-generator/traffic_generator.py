@@ -30,7 +30,7 @@ IFACE        = os.getenv("UE_TUNNEL_IFACE", "uesimtun0")
 TARGET_IP    = os.getenv("TARGET_IP", "192.168.100.1")
 INTERVAL     = float(os.getenv("SEND_INTERVAL", "2"))
 MODE         = "manifest"
-PCAP_PATH    = os.getenv("PCAP_PATH", "pcaps/Benign/BenignTraffic.pcap")
+PCAP_PATH    = os.getenv("PCAP_PATH", "pre-selected/replay_pcaps_contiguous/Benign_Final/BenignTraffic_contiguous_sample.pcap")
 REPLAY_SPEED = float(os.getenv("REPLAY_SPEED", "1.0"))
 
 
@@ -44,7 +44,7 @@ MIXED_SEQUENCE = [
 # manifest.json and pcaps/ are both baked into this
 # image's own /app folder by flow_sampler.py's output paths no separate
 # evaluation/ folder needs to be mounted into this container.
-MANIFEST_PATH = os.getenv("MANIFEST_PATH", "pre-selected/manifest.json")
+MANIFEST_PATH = os.getenv("MANIFEST_PATH", "pre-selected/manifest_contiguous.json")
 
 EVAL_DIR = Path(os.getenv("EVAL_DIR", "/evaluation"))
 EVAL_DIR.mkdir(parents=True, exist_ok=True)
@@ -109,53 +109,56 @@ def _priority_key(job):
 
 
 def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
-    # replay every job in manifest.json in order, waiting SCHEDULER SECONDS between jobs so flows from different scenarios
-    # never merge at the live capture side. Runs once, then returns unlike run_synthetic(), this does not loop forever.
+    TRUTH_LOG.parent.mkdir(parents=True, exist_ok=True)
+ 
     with open(manifest_path) as f:
         data = json.load(f)
     manifest = data["jobs"]
     manifest = sorted(manifest, key=_priority_key)
-
+ 
     for job in manifest:
-
+ 
         if time_expired():
             log.warning(f"MAX_RUNTIME_SECONDS={MAX_RUNTIME_SECONDS:.0f}s reached before all jobs "
                         f"finished — stopping early at replay_id={job['replay_id']}.")
             break
-
-        log.info(f"--- Replay {job['replay_id']}: {job['pcap_path']} "
-                 f"(expected={job['expected_label']}, flows={job['num_flows']}) ---")
-
+ 
+      
+        log.info(f"Replay {job['replay_id']}: {job['pcap_path']} "
+                 f"(expected={job['expected_label']}, "
+                )
+ 
         deadline = (RUN_START_TIME + MAX_RUNTIME_SECONDS) if MAX_RUNTIME_SECONDS > 0 else None
-
+ 
         start_ts = datetime.now(timezone.utc).isoformat()
         start_time = time.time()
-
+ 
         # Written immediately, before replay_pcap() runs, so this job's window
         # survives a crash/Ctrl+C/docker stop even if replay_pcap() never returns.
         started_record = {
             "replay_id": job["replay_id"], "pcap_path": job["pcap_path"],
-            "expected_label": job["expected_label"], "num_flows_sent": job["num_flows"],
+            "expected_label": job["expected_label"],
+            
             "status": "started",
             "start_ts": start_ts, "start_time": start_time,
         }
         with open(TRUTH_LOG, "a") as f:
             f.write(json.dumps(started_record) + "\n")
             f.flush()
-
+ 
         replay_pcap(job["pcap_path"], replay_speed=replay_speed, target_ip=TARGET_IP, iface=IFACE,
                     deadline=deadline)
-
+ 
         log.info(f"Replay {job['replay_id']} sent; waiting {SCHEDULER_DRAIN_SECONDS}s "
                  f"for the flow table to drain before the next job...")
         time.sleep(SCHEDULER_DRAIN_SECONDS)
-
+ 
         end_ts = datetime.now(timezone.utc).isoformat()
         end_time = time.time()
-
+ 
         record = {
             "replay_id": job["replay_id"], "pcap_path": job["pcap_path"],
-            "expected_label": job["expected_label"], "num_flows_sent": job["num_flows"],
+            "expected_label": job["expected_label"],
             "status": "completed",
             "start_ts": start_ts, "start_time": start_time,
             "end_ts": end_ts, "end_time": end_time,
@@ -163,6 +166,7 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
         with open(TRUTH_LOG, "a") as f:
             f.write(json.dumps(record) + "\n")
             f.flush()
+ 
 
 def main():
     log.info(f"Mode: {MODE}")
