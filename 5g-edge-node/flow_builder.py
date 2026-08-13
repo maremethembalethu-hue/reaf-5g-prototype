@@ -5,12 +5,14 @@
 import time
 from scapy.all import IP, TCP, UDP
 
-from feature_extractor import aggregate_window
+from feature_extraction import aggregate_window
 
 
 WINDOW_SIZE = 10
 
-IDLE_FLUSH_SECONDS = 2.0
+IDLE_FLUSH_SECONDS = 60.0
+
+ASSUMED_L2_HEADER_LEN = 14
 
 SERVICE_PORTS_NOTE = (
     "IRC below intentionally checks port 21 (FTP's control port, not IRC's) "
@@ -44,7 +46,7 @@ def build_packet_row(pkt, ts, last_pac_time):
         "HTTP": 0, "HTTPS": 0, "DNS": 0, "Telnet": 0, "SMTP": 0, "SSH": 0,
         "IRC": 0, "TCP": 0, "UDP": 0, "DHCP": 0, "ARP": 0, "ICMP": 0,
         "IGMP": 0, "IPv": 1, "LLC": 0,
-        "Tot size": len(pkt),        # full captured frame size, matching the
+        "Tot size": len(bytes(ip))  + ASSUMED_L2_HEADER_LEN,        # full captured frame size, matching the
                                       # original extractor's len(buf); no
                                       # Ethernet-header compensation needed here
                                       # since this is real sniffed traffic, not a
@@ -58,15 +60,15 @@ def build_packet_row(pkt, ts, last_pac_time):
     elif ip.proto == 2:
         row["IGMP"] = 1
 
-    if UDP in pkt:
+    if ip.proto == 17 and UDP in pkt:
         row["UDP"] = 1
-        row["Header_Length"] = 8   # fixed for UDP, matches Connectivity_features_basic
+        row["Header_Length"] = 8
         udp = pkt[UDP]
         sport, dport = udp.sport, udp.dport
         row["DNS"] = _is_port(sport, dport, 53)
         row["DHCP"] = 1 if ((sport, dport) == (67, 68) or (sport, dport) == (68, 67)) else 0
 
-    elif TCP in pkt:
+    elif ip.proto == 6 and TCP in pkt:
         row["TCP"] = 1
         tcp = pkt[TCP]
         dataofs = tcp.dataofs if tcp.dataofs else 5   # 5 * 4 = 20 bytes, TCP's default
@@ -124,16 +126,16 @@ class WindowBuilder:
             return self._finalize()
         return None
 
-    def expire_stale_partial_window(self, now=None):
-        #Call periodically to flush a trailing partial window during a traffic.         
+    # def expire_stale_partial_window(self, now=None):
+    #     #Call periodically to flush a trailing partial window during a traffic.         
 	    
-        if not self._rows:
-            return None
+    #     if not self._rows:
+    #         return None
         
-        now = now if now is not None else time.time()
-        if now - self._rows[-1]["ts"] >= self.idle_flush_seconds:
-            return self._finalize()
-        return None
+    #     now = now if now is not None else time.time()
+    #     if now - self._rows[-1]["ts"] >= self.idle_flush_seconds:
+    #         return self._finalize()
+    #     return None
 
     def flush(self):
         #Unconditionally finalize whatever's currently buffered, even if it's short of window_size.

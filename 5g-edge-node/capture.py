@@ -1,10 +1,11 @@
 
-# REAF-5G Edge Node Stage 1 Real-time packet capture inside the UPF network namespace Capture-py.
+# REAF-5G Edge Node Real-time packet capture inside the UPF network namespace Capture-py.
 
 import os
 import sys
 import time
 import logging
+import json
 import subprocess
 from datetime import datetime, timezone
  
@@ -48,6 +49,8 @@ def handle_finished_flow(window):
     result = classify_flow(window)
     log_prediction(window, result)
  
+ 
+    #log.info(f"LIVE_FEATURES {json.dumps(window['features'], default=str)}")
     ts = datetime.now(timezone.utc).isoformat()
     n_pkts = window["packet_count"]
     duration = window["last_time"] - window["start_time"]
@@ -69,16 +72,16 @@ def on_packet(pkt):
     if pkt is None:
         return  # mid-train fragment, or an incomplete set — wait or drop
  
-    finished = window_builder.add_packet(pkt, ts=time.time())
+    finished = window_builder.add_packet(pkt, ts=float(pkt.time))
     if finished is not None:
         handle_finished_flow(finished)
  
     # Windows complete purely by packet count, so
     # there's no per-flow idle-timeout eviction anymore just a single
     # global trailing partial window to flush during a in traffic.
-    stale_window = window_builder.expire_stale_partial_window()
-    if stale_window is not None:
-        handle_finished_flow(stale_window)
+    # stale_window = window_builder.expire_stale_partial_window()
+    # if stale_window is not None:
+    #     handle_finished_flow(stale_window)
  
     reassembler.expire_stale()
  
@@ -107,7 +110,7 @@ def main():
     tcpdump = subprocess.Popen(
         [
             "tcpdump",
-            "-i", "any",
+            "-i", "ogstun",
             "-n",
             "-U",
             "-w", "-",

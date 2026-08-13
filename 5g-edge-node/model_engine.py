@@ -4,14 +4,14 @@ import numpy as np
 import onnxruntime as ort
 import joblib
  
-from feature_extractor import compute_base_features, vectorize, HEAVY_FEATURES, LITE_FEATURES
+from feature_extraction import compute_base_features, vectorize, HEAVY_FEATURES, LITE_FEATURES
 from resource_monitor import get_model_tier, get_metrics
  
 log = logging.getLogger(__name__)
  
-MODEL_DIR         = os.path.join(os.path.dirname(__file__), "detection_models")
-HEAVY_MODEL_PATH  = os.path.join(MODEL_DIR, "model_full.onnx")
-LITE_MODEL_PATH   = os.path.join(MODEL_DIR, "model_lite.onnx")
+MODEL_DIR         = os.path.join(os.path.dirname(__file__), "trained_models/outputs")
+HEAVY_MODEL_PATH  = os.path.join(MODEL_DIR, "heavy_xgboost_3.onnx")
+LITE_MODEL_PATH   = os.path.join(MODEL_DIR, "label_decision_tree_3.onnx")
 HEAVY_SCALER_PATH = os.path.join(MODEL_DIR, "heavy_scaler.pkl")
 LITE_SCALER_PATH  = os.path.join(MODEL_DIR, "lite_scaler.pkl")
 LABEL_ENCODER_PATH = os.path.join(MODEL_DIR, "label_encoder.pkl")
@@ -69,7 +69,7 @@ def _decode_label(pred_class):
         return str(_label_encoder.inverse_transform([pred_class])[0])
     return f"class_{pred_class}"
  
- 
+BENIGN_LABELS = {"benign", "benign_final"}
 def classify_flow(window) :
     # Run inference on one finished WINDOW record purely so capture.py's
     # existing `from model_engine import classify_flow` import keeps working
@@ -111,7 +111,9 @@ def classify_flow(window) :
                 confidence = 1.0
  
         attack_type = _decode_label(pred_class)
-        is_attack = attack_type.lower() != "benign"
+        # is_attack = attack_type.lower() != "benign"
+    
+        is_attack = attack_type.lower() not in BENIGN_LABELS
         label = "[!! ATTACK ]" if is_attack else "[UE-TUNNEL ]"
  
         return {

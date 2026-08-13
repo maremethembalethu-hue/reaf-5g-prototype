@@ -4,7 +4,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 
-echo " REAF-5G Prototype — Startup"
+echo " REAF-5G Prototype: Startup"
 
 # Step 1: IP Forwarding
 echo "1/6 Enabling IP forwarding..."

@@ -9,7 +9,7 @@ from scapy.layers.inet import IP, defragment
 
 
 class FragmentReassembler:
-    def __init__(self, timeout=5.0):
+    def __init__(self, timeout=30):
         self._buffers = {}   # (src, dst, proto, ip.id) = {"frags": [...], "first_seen": ts}
         self.timeout = timeout
 

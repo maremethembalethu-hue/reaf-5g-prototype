@@ -11,7 +11,7 @@ PREDICTIONS_LOG.parent.mkdir(parents=True, exist_ok=True)
 
 
 
-def log_prediction(flow: dict, result: dict):
+def log_prediction(flow, result):
     record = {
         "flow_start_time": flow["start_time"],
         "flow_last_time": flow["last_time"],

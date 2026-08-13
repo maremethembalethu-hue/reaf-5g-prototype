@@ -2,6 +2,7 @@
 from collections import Counter
  
 import numpy as np
+import pandas as pd
  
 # Copied from validate_5g_replay_pipeline.py's verified MODEL_SPECS --
 # CRITICAL: exact training order, never sorted or alphabetized.
@@ -70,7 +71,10 @@ def compute_base_features(window):
  
 def vectorize(feats, feature_list) :
     # Orders a feature dict into the exact column order a model expects.
-    return np.array([feats.get(f, 0.0) for f in feature_list], dtype=np.float32).reshape(1, -1)
+    return pd.DataFrame(
+        [[feats.get(f, 0.0) for f in feature_list]],
+        columns=feature_list
+    )
  
  
 def extract_heavy(window):

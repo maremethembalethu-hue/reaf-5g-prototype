@@ -1,11 +1,6 @@
 FROM python:3.11-slim
 
-# Install system packages needed for packet capture
-# tcpdump: raw packet capture tool (also used as fallback)
-# iproute2: ip command for interface detection
-# net-tools: ifconfig for legacy interface listing
-# iputils-ping: ping for connectivity testing
-# libpcap-dev: C library that Scapy uses for raw socket capture
+
 RUN apt-get update && apt-get install -y \
     tcpdump \
     iproute2 \
@@ -25,4 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # -u flag forces Python to run in unbuffered mode, this means log output appears in docker logs immediately
-CMD ["python3", "-u", "capture.py"]
+#CMD ["python3", "-u", "capture.py"]
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+CMD ["./entrypoint.sh"]
