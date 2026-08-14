@@ -248,12 +248,14 @@ def encode_protocol(df, col="Protocol Type"):
 
 
 def pearson_filter(df, feature_cols, threshold=0.90):
-    # Drops one feature from every pair with |correlation| > threshold, keeping the first-seen feature.
+    if len(feature_cols) < 2:
+        return feature_cols, []
     corr = df[feature_cols].corr().abs()
     upper = corr.where(np.triu(np.ones(corr.shape), k=1).astype(bool))
     to_drop = [col for col in upper.columns if any(upper[col] > threshold)]
     kept = [c for c in feature_cols if c not in to_drop]
-    print(f"Pearson filter: dropped {len(to_drop)} of {len(feature_cols)} features (|r| > {threshold})")
+    print(f"Pearson filter: dropped {len(to_drop)} of {len(feature_cols)} "
+          f"features (|r| > {threshold})")
     return kept, to_drop
 
 
@@ -273,16 +275,16 @@ FEATURE_TIER_MAP.update({f: "B" for f in TIER_B_TIMING})
 FEATURE_TIER_MAP.update({f: "C" for f in TIER_C_SESSION_STATE})
 
 HEAVY_FEATURES = [
-     "flow_duration", "Rate", "Srate", "Drate", "Tot sum", "Number", "Tot size",
-     "IAT", "Header_Length", "Min", "Max", "AVG", "Std",
-     "Magnitude", "Radius", "Covariance", "Variance", "Weight",
-     "syn_flag_number", "rst_flag_number", "psh_flag_number", "ack_flag_number",
-     "rst_count", "Protocol Type",
+    "flow_duration", "Rate", "Srate", "Drate", "Tot sum", "Number", "Tot size",
+    "IAT", "Header_Length", "Min", "Max", "AVG", "Std",
+    "Magnitude", "Radius", "Covariance", "Variance", "Weight",
+    "syn_flag_number", "rst_flag_number", "psh_flag_number", "ack_flag_number",
+    "rst_count", "Protocol Type",
  ] 
 
 LITE_FEATURES = [
-     "IAT", "Magnitude", "Protocol Type", "Header_Length", "Min",
-     "flow_duration", "fin_count", "rst_count", "Srate", "urg_count",
+ "IAT", "Magnitude", "Protocol Type", "Header_Length", "Min",
+    "flow_duration", "fin_count", "rst_count", "Srate", "urg_count",
  ]
 
 
@@ -296,34 +298,48 @@ def resolve_feature_set(df, requested_features, set_name="feature set"):
     print(f"[{set_name}] requested: {len(requested_features)} | available: {len(available)} | missing: {len(missing)}")
     if missing:
         print(f"[{set_name}] NOT PRESENT in this data pull (dropped): {missing}")
-    return available, missing
+    return available
 
 
 
 
 
-def gain_based_selection(X_train, y_train, median_rule=True, top_k=None):
-    model = lgb.LGBMClassifier(n_estimators=200, random_state=RANDOM_STATE)
+def gain_based_selection(X_train, y_train, top_k=None, median_rule=True):
+    model = lgb.LGBMClassifier(n_estimators=200, random_state=RANDOM_STATE, verbose=-1)
     model.fit(X_train, y_train)
     gains = pd.Series(model.booster_.feature_importance(importance_type="gain"),
                        index=X_train.columns).sort_values(ascending=False)
-    selected = gains[gains > gains.median()].index.tolist() if median_rule else gains.head(top_k).index.tolist()
-    return selected, gains
+    if median_rule:
+        selected = gains[gains > gains.median()].index.tolist()
+    else:
+        selected = gains.head(top_k).index.tolist()
+    return selected if selected else X_train.columns.tolist()
 
-def gini_based_selection(X_train, y_train, top_k=10):
+
+
+def gini_based_selection(X_train, y_train, top_k=6):
     model = DecisionTreeClassifier(criterion="gini", random_state=RANDOM_STATE)
     model.fit(X_train, y_train)
-    importances = pd.Series(model.feature_importances_, index=X_train.columns).sort_values(ascending=False)
-    return importances.head(top_k).index.tolist(), importances
-
+    importances = pd.Series(model.feature_importances_, index=X_train.columns)
+    return importances.sort_values(ascending=False).head(top_k).index.tolist()
 
 
 def select_features_for_track(train_df, candidate_features, heavy_top_k=None,
-                               lite_top_k=6):
-    # Runs Pearson filter gain (Heavy) / gini (Lite) selection over
+                               lite_top_k=6, apply_gain_gini_selection=False):
+
     pearson_kept, _ = pearson_filter(train_df, candidate_features)
     if len(pearson_kept) < 2:
-        pearson_kept = candidate_features  # too few features to correlate meaningfully
+        pearson_kept = candidate_features
+
+    if not apply_gain_gini_selection:
+        heavy_features = pearson_kept
+        # Lite still needs a hard cap — an unpruned 14-feature tree isn't "lite"
+        if len(pearson_kept) > lite_top_k:
+            lite_features = gini_based_selection(
+                train_df[pearson_kept], train_df["y"], top_k=lite_top_k)
+        else:
+            lite_features = pearson_kept
+        return heavy_features, lite_features
 
     heavy_features = gain_based_selection(
         train_df[pearson_kept], train_df["y"], top_k=heavy_top_k,
@@ -334,7 +350,6 @@ def select_features_for_track(train_df, candidate_features, heavy_top_k=None,
     )
     return heavy_features, lite_features
 
-
 # Splitting & Scaling
 def split_ciciot(df, label_col="Label"):
     train, temp = train_test_split(df, test_size=0.30, stratify=df[label_col], random_state=RANDOM_STATE)
@@ -344,6 +359,8 @@ def split_ciciot(df, label_col="Label"):
 
 
 def fit_scaler(train_df, feature_cols):
+    if isinstance(feature_cols, tuple):
+        feature_cols = feature_cols[0]
     scaler = StandardScaler()
     scaler.fit(train_df[feature_cols])
     return scaler
@@ -413,7 +430,7 @@ def train_heavy_model(X_train, y_train, X_val, y_val, num_class, best_params):
     model = xgb.XGBClassifier(**params)
     model.fit(X_train, y_train, sample_weight=sample_weights,
               eval_set=[(X_train, y_train), (X_val, y_val)], verbose=False)
-    print(f"Heavy model trained on device='{XGB_DEVICE}' in {time.perf_counter()-t0:.1f}s")
+   # print(f"Heavy[{tag}] trained on device='{XGB_DEVICE}' in {time.perf_counter()-t0:.1f}s")
     return model, model.evals_result()
 
 LITE_PARAMS = dict(
@@ -687,25 +704,25 @@ def run_pipeline(sample_frac_ciciot=0.02, optuna_trials=20, min_per_class=1000):
     num_class = len(label_encoder.classes_)
 
     # Feature resolution (handles schema differences across CICIoT2023 redistributions)
-    heavy_features, heavy_missing = resolve_feature_set(train, HEAVY_FEATURES, "HEAVY_FEATURES")
-    lite_features, lite_missing = resolve_feature_set(train, LITE_FEATURES, "LITE_FEATURES")
+    heavy_features = resolve_feature_set(train, HEAVY_FEATURES, "HEAVY_FEATURES")
+    lite_features = resolve_feature_set(train, LITE_FEATURES, "LITE_FEATURES")
     print("heavy_features: ")
     print(heavy_features)
     print("lite_features: ")
     print(lite_features)
     
-    print("heavy_missing: ")
-    print(heavy_missing)
-    print("lite_missing: ")
-    print(lite_missing)
-    if heavy_missing or lite_missing:
-        print("\n[RESEARCH NOTE] This data pull does not match the full 47-column CICIoT2023 "
-              "schema referenced in the design.")
+    # print("heavy_missing: ")
+    # print(heavy_missing)
+    # print("lite_missing: ")
+    # print(lite_missing)
+    # if heavy_missing or lite_missing:
+    #     print("\n[RESEARCH NOTE] This data pull does not match the full 47-column CICIoT2023 "
+    #           "schema referenced in the design.")
 
 
     results = {}
     for track_name, allowed_tiers in [("legacy", ("A", "B", "C")), ("robust", ("A", "B"))]:
-        print(f"\n{'='*60}\nTRACK: {track_name.upper()}\n{'='*60}")
+        print(f"TRACK: {track_name.upper()}")
         
         heavy_candidates = restrict_to_tiers(
                     resolve_feature_set(train, HEAVY_FEATURES, f"HEAVY[{track_name}] candidates"),
@@ -749,27 +766,27 @@ def run_pipeline(sample_frac_ciciot=0.02, optuna_trials=20, min_per_class=1000):
                                         num_class, n_trials=optuna_trials)
         heavy_model, heavy_evals = train_heavy_model(train_h[heavy_features], train_h["y"],
                                                     val_h[heavy_features], val_h["y"],
-                                                    num_class, best_params, tag=track_name)
+                                                    num_class, best_params)
 
         # Decision Tree (Lite)
-        lite_model = train_lite_model(train_l[lite_features], train_l["y"], tag=track_name)
+        lite_model = train_lite_model(train_l[lite_features], train_l["y"])
 
         # In-domain evaluation — called exactly once per model, reused for every plot below
         print("\n Heavy model (CICIoT2023 test):")
         heavy_results = evaluate_model(heavy_model, test_h[heavy_features], test_h["y"],
-                                        label_names=label_encoder.classes_, model_name="heavy_xgboost")
+                                        label_names=label_encoder.classes_, model_name=f"heavy_xgboost_{track_name}")
         print("\nLite model (CICIoT2023 test):")
         lite_results = evaluate_model(lite_model, test_l[lite_features], test_l["y"],
-                                    label_names=label_encoder.classes_, model_name="lite_decision_tree")
+                                    label_names=label_encoder.classes_, model_name=f"lite_decision_tree_{track_name}")
 
         # In-domain plots
-        plot_xgb_training_curve(heavy_evals)
-        plot_confusion_matrix(heavy_model, test_h[heavy_features], test_h["y"], label_encoder.classes_, f"HeavyNet (XGBoost) {track_name}")
-        plot_confusion_matrix(lite_model, test_l[lite_features], test_l["y"], label_encoder.classes_, f"LiteNet (Decision Tree) {track_name}")
-        plot_feature_importance(heavy_model, heavy_features, f"HeavyNet (XGBoost) {track_name}")
-        plot_feature_importance(lite_model, lite_features, f"LiteNet (Decision Tree) {track_name}")
-        plot_learning_curve(DecisionTreeClassifier(**LITE_PARAMS), train_l[lite_features], train_l["y"], f"LiteNet (Decision Tree) {track_name}")
-        plot_model_comparison(heavy_results, lite_results, track_name)
+        # plot_xgb_training_curve(heavy_evals)
+        # plot_confusion_matrix(heavy_model, test_h[heavy_features], test_h["y"], label_encoder.classes_, f"HeavyNet (XGBoost) {track_name}")
+        # plot_confusion_matrix(lite_model, test_l[lite_features], test_l["y"], label_encoder.classes_, f"LiteNet (Decision Tree) {track_name}")
+        # plot_feature_importance(heavy_model, heavy_features, f"HeavyNet (XGBoost) {track_name}")
+        # plot_feature_importance(lite_model, lite_features, f"LiteNet (Decision Tree) {track_name}")
+        # plot_learning_curve(DecisionTreeClassifier(**LITE_PARAMS), train_l[lite_features], train_l["y"], f"LiteNet (Decision Tree) {track_name}")
+        # plot_model_comparison(heavy_results, lite_results, track_name)
 
 
 
