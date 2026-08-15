@@ -67,7 +67,7 @@ print(f"Decision Tree, Lite will train on: {'GPU cuML' if CUML_AVAILABLE else 'C
 
 # Paths & output directory
 CICIOT_ROOT = Path("data/CICIoT2023")      
-OUTPUT_DIR = Path("outputs")
+OUTPUT_DIR = Path("outputs/variation")
 OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
 
 import os
@@ -812,19 +812,36 @@ def run_pipeline(sample_frac_ciciot=0.02, optuna_trials=20, min_per_class=1000):
             lite_onnx_path = None
 
 
-         #  Export preprocessing artifacts 
-        joblib.dump(heavy_scaler, OUTPUT_DIR / f"heavy_{track_name}_scaler.joblib")
-        joblib.dump(lite_scaler, OUTPUT_DIR / f"lite_{track_name}_scaler.joblib")
-        joblib.dump(label_encoder, OUTPUT_DIR / f"label_encoder_{track_name}.joblib")
-        with open(OUTPUT_DIR / f"feature_lists_{track_name}.json", "w") as f:
-            json.dump({"heavy_features": heavy_features, "lite_features": lite_features,
-                            "tier_map": FEATURE_TIER_MAP}, f, indent=2)
-        
-        results[track_name] = {
-                    "heavy_model": heavy_model, "lite_model": lite_model,
-                    "heavy_features": heavy_features, "lite_features": lite_features,
-                    "heavy_onnx_path": heavy_onnx_path, "lite_onnx_path": lite_onnx_path,
-                }
+            heavy_scaler_path = get_unique_path(
+                OUTPUT_DIR / f"heavy_{track_name}_scaler.pkl"
+            )
+
+            lite_scaler_path = get_unique_path(
+                OUTPUT_DIR / f"lite_{track_name}_scaler.pkl"
+            )
+
+            label_encoder_path = get_unique_path(
+                OUTPUT_DIR / f"label_encoder_{track_name}.pkl"
+            )
+
+            feature_lists_path = get_unique_path(
+                OUTPUT_DIR / f"feature_lists_{track_name}.json"
+            )
+
+            joblib.dump(heavy_scaler, heavy_scaler_path)
+            joblib.dump(lite_scaler, lite_scaler_path)
+            joblib.dump(label_encoder, label_encoder_path)
+
+            with open(feature_lists_path, "w") as f:
+                json.dump(
+                    {
+                        "heavy_features": heavy_features,
+                        "lite_features": lite_features,
+                        "tier_map": FEATURE_TIER_MAP
+                    },
+                    f,
+                    indent=2
+                )
     
     joblib.dump(proto_encoder, OUTPUT_DIR / "protocol_encoder.joblib")
     print(f"\nAll models and artifacts written to: {OUTPUT_DIR.resolve()}")
