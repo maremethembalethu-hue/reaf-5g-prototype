@@ -3,7 +3,7 @@
 
 
 import time
-from scapy.all import IP, TCP, UDP
+from scapy.all import IP, TCP, UDP, ARP
 
 from feature_extraction import aggregate_window
 
@@ -13,94 +13,97 @@ WINDOW_SIZE = 10
 IDLE_FLUSH_SECONDS = 60.0
 
 ASSUMED_L2_HEADER_LEN = 14
+ETHERNET_HEADER_LEN = 14
 
-SERVICE_PORTS_NOTE = (
-    "IRC below intentionally checks port 21 (FTP's control port, not IRC's) "
-    "-- this reproduces a quirk/bug in the ground-truth extractor "
-    "(Layered_features.py's L4.IRC()) on purpose, so our numbers match the "
-    "training data's."
-)
 
 
 def _is_port(sport, dport, port):
     return 1 if (sport == port or dport == port) else 0
 
-
-def build_packet_row(pkt, ts, last_pac_time):
-    #Computes one row of raw per-packet values a direct port of the per-packet section of Feature_extraction.py's pcap_evaluation() loop.
+def wire_size(pkt):
+    size = len(pkt)
     
-    ip = pkt[IP]
-    iat = 0.0 if last_pac_time is None else max(0.0, ts - last_pac_time)
+    size += ETHERNET_HEADER_LEN
+    return size
+
+def get_flag_values(tcp):
+    flags = int(tcp.flags)
+    return [
+        int((flags & 0x01) != 0),  # FIN
+        int((flags & 0x02) != 0),  # SYN
+        int((flags & 0x04) != 0),  # RST
+        int((flags & 0x08) != 0),  # PSH
+        int((flags & 0x10) != 0),  # ACK
+        int((flags & 0x20) != 0),  # URG
+        int((flags & 0x40) != 0),  # ECE
+        int((flags & 0x80) != 0),  # CWR
+    ]
+    
+def build_packet_row(pkt, ts, last_pac_time):
+    has_ip = IP in pkt
+    has_arp = (not has_ip) and (ARP in pkt)
+
+    if not has_ip and not has_arp:
+        return None, last_pac_time
+
+    iat = 0.0 if last_pac_time is None else max(0.0, float(ts) - float(last_pac_time))
 
     row = {
         "ts": ts,
-        "Header_Length": 0,          # only set for TCP/UDP below; 0 for ICMP etc,
-                                      # matching the original code's per-packet reset
-        "Protocol Type": ip.proto,
-        "Time_To_Live": getattr(ip, "ttl", 0),
-        "Rate": 0.0,                 # filled in at window-aggregation time only
-        "fin_flag_number": 0, "syn_flag_number": 0, "rst_flag_number": 0,
-        "psh_flag_number": 0, "ack_flag_number": 0, "ece_flag_number": 0,
+        "Header_Length": 0.0,
+        # Protocol Type stays 0 for ARP-only packets, same as the
+        # original (proto_type is never set outside the IP branch).
+        "Protocol Type": int(pkt[IP].proto) if has_ip else 0,
+        "Rate": 0.0,
+        "fin_flag_number": 0,
+        "syn_flag_number": 0,
+        "rst_flag_number": 0,
+        "psh_flag_number": 0,
+        "ack_flag_number": 0,
+        "ece_flag_number": 0,
         "cwr_flag_number": 0,
-        "ack_count": 0, "syn_count": 0, "fin_count": 0, "rst_count": 0,
-        "HTTP": 0, "HTTPS": 0, "DNS": 0, "Telnet": 0, "SMTP": 0, "SSH": 0,
-        "IRC": 0, "TCP": 0, "UDP": 0, "DHCP": 0, "ARP": 0, "ICMP": 0,
-        "IGMP": 0, "IPv": 1, "LLC": 0,
-        "Tot size": len(bytes(ip))  + ASSUMED_L2_HEADER_LEN,        # full captured frame size, matching the
-                                      # original extractor's len(buf); no
-                                      # Ethernet-header compensation needed here
-                                      # since this is real sniffed traffic, not a
-                                      # reconstructed IP-only packet
+        "ack_count": 0,
+        "syn_count": 0,
+        "fin_count": 0,
+        "rst_count": 0,
+        "Tot size": wire_size(pkt),
         "IAT": iat,
         "Number": 1,
     }
 
-    if ip.proto == 1:
-        row["ICMP"] = 1
-    elif ip.proto == 2:
-        row["IGMP"] = 1
+    if not has_ip:
+        # ARP-only packet: everything else stays at the defaults above.
+        return row, ts
+
+    ip = pkt[IP]
 
     if ip.proto == 17 and UDP in pkt:
-        row["UDP"] = 1
-        row["Header_Length"] = 8
-        udp = pkt[UDP]
-        sport, dport = udp.sport, udp.dport
-        row["DNS"] = _is_port(sport, dport, 53)
-        row["DHCP"] = 1 if ((sport, dport) == (67, 68) or (sport, dport) == (68, 67)) else 0
+        row["Header_Length"] = 8.0
 
     elif ip.proto == 6 and TCP in pkt:
-        row["TCP"] = 1
         tcp = pkt[TCP]
-        dataofs = tcp.dataofs if tcp.dataofs else 5   # 5 * 4 = 20 bytes, TCP's default
+        dataofs = tcp.dataofs if tcp.dataofs else 5
         row["Header_Length"] = int(dataofs) * 4
 
-        flags = tcp.flags
-        row["fin_flag_number"] = int(bool(flags & 0x01))
-        row["syn_flag_number"] = int(bool(flags & 0x02))
-        row["rst_flag_number"] = int(bool(flags & 0x04))
-        row["psh_flag_number"] = int(bool(flags & 0x08))
-        row["ack_flag_number"] = int(bool(flags & 0x10))
-        row["ece_flag_number"] = int(bool(flags & 0x40))
-        row["cwr_flag_number"] = int(bool(flags & 0x80))
+        flag_values = get_flag_values(tcp)
+        row["fin_flag_number"] = flag_values[0]
+        row["syn_flag_number"] = flag_values[1]
+        row["rst_flag_number"] = flag_values[2]
+        row["psh_flag_number"] = flag_values[3]
+        row["ack_flag_number"] = flag_values[4]
+        row["ece_flag_number"] = flag_values[6]
+        row["cwr_flag_number"] = flag_values[7]
 
-        # per-packet *_count == the corresponding *_flag_number (0 or 1);
-        # the distinction only appears after window aggregation, where
-        # *_count gets SUMMED and *_flag_number gets AVERAGED (see
-        # aggregate_window() in feature_extractor.py).
+        # Per-packet, NOT cumulative across the pcap -- see the note
+        # above build_packet_row(). Summed across the window later in
+        # aggregate_window().
         row["ack_count"] = row["ack_flag_number"]
         row["syn_count"] = row["syn_flag_number"]
         row["fin_count"] = row["fin_flag_number"]
         row["rst_count"] = row["rst_flag_number"]
 
-        sport, dport = tcp.sport, tcp.dport
-        row["HTTP"] = _is_port(sport, dport, 80)
-        row["HTTPS"] = _is_port(sport, dport, 443)
-        row["SSH"] = _is_port(sport, dport, 22)
-        row["IRC"] = _is_port(sport, dport, 21)  # see SERVICE_PORTS_NOTE above
-        row["Telnet"] = _is_port(sport, dport, 23)
-        row["SMTP"] = _is_port(sport, dport, 25)
-
     return row, ts
+
 
 
 class WindowBuilder:
