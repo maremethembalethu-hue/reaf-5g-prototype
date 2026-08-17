@@ -6,11 +6,15 @@ import logging
 import socket
 import struct
 import fcntl
+import hashlib
 from pathlib import Path
 from scapy.layers.inet import fragment
 
 from scapy.all import RawPcapReader, Ether, IP, IPv6, L3RawSocket, TCP, UDP
 
+from pkt_debug import inspect_packet
+
+from build_envelope import build_envelope_chunks
 # pcap link-layer type codes we know how to decode.
 _LINKTYPE_DECODERS = {
     1:   Ether,   # DLT_EN10MB  standard Ethernet capture (most tcpdump/CICIoT2023 pcaps)
@@ -31,6 +35,8 @@ IFACE     = os.getenv("UE_TUNNEL_IFACE", "uesimtun0")
 TARGET_IP = os.getenv("TARGET_IP", "192.168.100.1")
 PCAP_DIR  = BASE_DIR / "pcaps"/ Path(os.getenv("PCAP_DIR", "pcaps"))
 ORIGINAL_UE = "192.168.137.175"
+MAX_CHUNK_PAYLOAD = int(os.getenv("REAF_MAX_CHUNK_PAYLOAD", "1300"))
+REAF_PORT = int(os.getenv("REAF_PORT", "9999"))
 
     # BASE_DIR / "pcaps" / "BenignTraffic.pcap",
     # BASE_DIR / "pcaps" / "DDoS-UDP_Flood.pcap",
@@ -56,9 +62,14 @@ def load_metadata(pcap_path):
     meta_path = Path(str(pcap_path).rsplit(".", 1)[0] + ".json")
     return json.loads(meta_path.read_text()) if meta_path.exists() else {}
 
+def id_for(pcap_path):
+  
+    digest = hashlib.sha1(str(pcap_path).encode("utf-8")).digest()
+    return int.from_bytes(digest[:4], "big")
 
 def iter_packets(pcap_path):
     reader = RawPcapReader(str(pcap_path))
+    linktype = reader.linktype
     decoder = _LINKTYPE_DECODERS.get(reader.linktype)
     if decoder is None:
         log.warning(f"Unrecognized linktype {reader.linktype} for {pcap_path}, "
@@ -70,7 +81,8 @@ def iter_packets(pcap_path):
         if IP not in pkt:
             continue
         ts = pkt_meta.sec + pkt_meta.usec / 1e6
-        yield pkt, ts
+        ip_bytes = bytes(pkt[IP])
+        yield ip_bytes, ts, linktype
 
 
 
@@ -113,6 +125,13 @@ def make_socket(iface=IFACE):
    
     return L3RawSocket(iface=iface)
 
+def send_envelope_chunk(sock, ue_ip, target_ip, chunk_bytes):
+    # The OUTER packet is the only thing that gets new addressing
+    outer = IP(src=ue_ip, dst=target_ip) / UDP(sport=REAF_PORT, dport=REAF_PORT) / chunk_bytes
+    del outer.len
+    del outer.chksum
+    del outer[UDP].chksum
+    sock.outs.sendto(bytes(outer), (target_ip, 0))
 
 def replay_single_packet(pcap_path, iface=IFACE, target_ip=TARGET_IP, ue_ip=None):
    
@@ -120,36 +139,28 @@ def replay_single_packet(pcap_path, iface=IFACE, target_ip=TARGET_IP, ue_ip=None
     if ue_ip is None:
         print(f"FAIL: could not resolve IP on {iface}")
         return False
-
+    flow_id = id_for(pcap_path)
     print(f"Opening {pcap_path} with RawPcapReader...")
-    for pkt, ts in iter_packets(pcap_path):
-        print(f"Read one packet, ts={ts}")
-        if IP not in pkt:
-            print("  not an IP packet, skipping")
-            continue
-
-        print(f"  original: {pkt.summary()}")
-        out_pkt = rewrite_packet(pkt, ue_ip, target_ip)
-        print(f"  rewritten: {out_pkt.summary()}")
-
-        sock = make_socket(iface)
-        print("Sending...")
-        try:
-            
-            if len(bytes(out_pkt)) > 1300:
-                fragments = fragment(out_pkt, fragsize=1300)
-
-                for frag in fragments:
-                    sock.send(frag)
-            else:
-                sock.send(out_pkt)
-            print("Sent")
-            return True
-        except OSError as e:
-            print(f"FAIL: sock.send() raised {e}")
-            return False
-        finally:
-            sock.close()
+    sock = make_socket(iface)
+    try:
+        for packet_id, (original_bytes, ts, linktype) in enumerate(iter_packets(pcap_path)):
+            print(f"Read one packet, ts={ts}, {len(original_bytes)} original bytes")
+            chunks = build_envelope_chunks(
+                flow_id, packet_id, ts, linktype, original_bytes,
+                max_chunk_payload=MAX_CHUNK_PAYLOAD,
+            )
+            print(f"  encapsulated into {len(chunks)} envelope chunk(s), original untouched")
+            print("Sending...")
+            try:
+                for chunk in chunks:
+                    send_envelope_chunk(sock, ue_ip, target_ip, chunk)
+                print("Sent")
+                return True
+            except OSError as e:
+                print(f"FAIL: sock.send() raised {e}")
+                return False
+    finally:
+        sock.close()
 
     print("FAIL: pcap contained no IP packets (or was empty)")
     return False
@@ -162,6 +173,7 @@ def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, u
         return 0
     log.info(f"REPLAY | effective replay_speed={replay_speed}, MAX_DELAY={MAX_DELAY}")
     metadata = load_metadata(pcap_path)
+    flow_id = id_for(pcap_path)
     own_socket = sock is None
     if own_socket:
         sock = make_socket(iface)
@@ -174,42 +186,39 @@ def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, u
     total = 0
 
     try:
-        for pkt, ts in iter_packets(pcap_path):
+        for packet_id, (original_bytes, ts, linktype) in enumerate(iter_packets(pcap_path)):
             if deadline is not None and time.time() >= deadline:
                 log.warning(f"REPLAY | {Path(pcap_path).name} | deadline reached — "
                             f"stopping mid-file at packet {total} (sent={sent})")
                 break
             total += 1
-            if prev_ts is not None:
-                delay = (ts - prev_ts) / replay_speed
+            # if prev_ts is not None:
+            #     delay = (ts - prev_ts) / replay_speed
                 
     
-                # if MAX_DELAY is not None and delay > MAX_DELAY:
-                #     delay = MAX_DELAY
+            #     # if MAX_DELAY is not None and delay > MAX_DELAY:
+            #     #     delay = MAX_DELAY
                 
-                # #MAX_DELAY = 0.05      # 50 ms
+            #     # #MAX_DELAY = 0.05      # 50 ms
 
-                # if delay > 0:
+            #     # if delay > 0:
 
-                time.sleep(delay)
-                log.info(f"Delay = {delay:.3f}s")
+            #     time.sleep(delay)
+            #     log.info(f"Delay = {delay:.3f}s")
                
             prev_ts = ts
 
-            out_pkt = rewrite_packet(pkt, ue_ip, target_ip)
-            if out_pkt is None:
-                skipped += 1
-                continue
+            chunks = build_envelope_chunks(
+                flow_id, packet_id, ts, linktype, original_bytes,
+                max_chunk_payload=MAX_CHUNK_PAYLOAD,
+            )
 
-            raw_bytes = bytes(out_pkt)
             try:
-                if len(raw_bytes) > 1300:
-                    for frag in fragment(out_pkt, fragsize=1300):
-                        sock.outs.sendto(bytes(frag), (frag.dst, 0))
-                else:
-                    sock.outs.sendto(raw_bytes, (out_pkt.dst, 0))
+                for chunk in chunks:
+                    send_envelope_chunk(sock, ue_ip, target_ip, chunk)
                 sent += 1
-                log.info(f"REPLAY | {ue_ip} - {target_ip} | {out_pkt.summary()}")
+                log.info(f"REPLAY | {ue_ip} to {target_ip} | packet_id={packet_id} "
+                         f"({len(original_bytes)}B original, {len(chunks)} chunk(s))")
             except OSError as e:
                 errors += 1
                 if errors <= 3 or errors % 50 == 0:
@@ -219,7 +228,7 @@ def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, u
             sock.close()
 
     log.info(f"REPLAY | {Path(pcap_path).name} complete "
-             f"(read={total}, sent={sent}, skipped_non_ip={skipped}, errors={errors}, "
+             f"(read={total}, sent={sent}, errors={errors}, "
              f"expected_attack={metadata.get('expected_attack', 'unknown')})")
     return sent
 
