@@ -9,8 +9,8 @@ import time
 MAGIC = b"RE5G"
 VERSION = 1
 
-_HEADER_FMT = "!4sBIIdHHHH"
-_HEADER_SIZE = struct.calcsize(_HEADER_FMT)
+HEADER_FMT = "!4sBIIdHHHH"
+HEADER_SIZE = struct.calcsize(HEADER_FMT)
 
 
 def build_envelope_chunks(flow_id, packet_id, timestamp, linktype, payload, max_chunk_payload=1200):
@@ -32,7 +32,7 @@ def build_envelope_chunks(flow_id, packet_id, timestamp, linktype, payload, max_
     out = []
     for idx, chunk_payload in enumerate(chunk_payloads):
         header = struct.pack(
-            _HEADER_FMT,
+            HEADER_FMT,
             MAGIC,
             VERSION,
             flow_id & 0xFFFFFFFF,
@@ -46,30 +46,3 @@ def build_envelope_chunks(flow_id, packet_id, timestamp, linktype, payload, max_
         out.append(header + chunk_payload)
     return out
 
-
-def parse_envelope_chunk(raw):
-    # Decode a single envelope chunk. Returns a dict, or None if `raw`
-    # doesn't look like a REAF envelope 
-    
-    if len(raw) < _HEADER_SIZE:
-        return None
-
-    (magic, version, flow_id, packet_id, timestamp, linktype,
-     chunk_index, chunk_count, payload_length) = struct.unpack(_HEADER_FMT, raw[:_HEADER_SIZE])
-
-    if magic != MAGIC or version != VERSION:
-        return None
-
-    payload = raw[_HEADER_SIZE:_HEADER_SIZE + payload_length]
-    if len(payload) != payload_length:
-        return None  # truncated mid-payload
-
-    return {
-        "flow_id": flow_id,
-        "packet_id": packet_id,
-        "timestamp": timestamp,
-        "linktype": linktype,
-        "chunk_index": chunk_index,
-        "chunk_count": chunk_count,
-        "payload": payload,
-    }
