@@ -9,7 +9,7 @@ import json
 import subprocess
 from datetime import datetime, timezone
  
-from scapy.all import sniff, IP
+from scapy.all import sniff, IP, UDP
 from fragment_reassembly import FragmentReassembler
  
 from flow_builder import WindowBuilder
@@ -17,8 +17,8 @@ from model_engine import classify_flow
 from trigger import should_acquire
 from evidence_collect import collect_evidence
 from prediction_log import log_prediction
- 
- 
+from pkt_debug import inspect_packet 
+from envelope_ressemble import EnvelopeReassembler
 sys.stdout.reconfigure(line_buffering=True)
  
 import logging as _log
@@ -40,10 +40,11 @@ log = logging.getLogger(__name__)
 UE_SUBNET    = os.getenv("UE_SUBNET", "192.168.100.0/24")
 EVIDENCE_DIR = os.getenv("EVIDENCE_DIR", "/evidence")
 UE_PREFIX    = ".".join(UE_SUBNET.split(".")[:3])
+REAF_PORT = int(os.getenv("REAF_PORT", "9999"))
  
 window_builder = WindowBuilder()
 reassembler = FragmentReassembler()
- 
+envelope_reassembler = EnvelopeReassembler()  
  
 def handle_finished_flow(window):
     result = classify_flow(window)
@@ -64,26 +65,56 @@ def handle_finished_flow(window):
         collect_evidence(window["packets"], result, ts)
  
  
-def on_packet(pkt):
-    if IP not in pkt:
-        return
- 
+
+def process_original_packet(pkt):
+    # DECAPSULATED original packet rather than directly on whatever
+    # Scapy sniffed off the wire.
     pkt = reassembler.feed(pkt, ts=time.time())
     if pkt is None:
         return  # mid-train fragment, or an incomplete set — wait or drop
- 
+
     finished = window_builder.add_packet(pkt, ts=float(pkt.time))
     if finished is not None:
         handle_finished_flow(finished)
- 
-    # Windows complete purely by packet count, so
-    # there's no per-flow idle-timeout eviction anymore just a single
-    # global trailing partial window to flush during a in traffic.
-    # stale_window = window_builder.expire_stale_partial_window()
-    # if stale_window is not None:
-    #     handle_finished_flow(stale_window)
- 
+
+    stale_window = window_builder.expire_stale_partial_window()
+    if stale_window is not None:
+        handle_finished_flow(stale_window)
+
     reassembler.expire_stale()
+
+
+def on_packet(pkt):
+    # What actually arrives here is the OUTER carrier packet 
+    # It must be decapsulated before anything downstream (feature
+    # extraction included) ever sees it.
+    if IP not in pkt or UDP not in pkt:
+        return
+    if pkt[UDP].sport != REAF_PORT and pkt[UDP].dport != REAF_PORT:
+        return
+
+    udp_payload = bytes(pkt[UDP].payload)
+    result = envelope_reassembler.feed(udp_payload, ts=time.time())
+    if result is None:
+        return  # not a REAF envelope, or still waiting on more chunks
+
+    original_bytes, original_ts, _linktype = result
+
+    try:
+        original_pkt = IP(original_bytes)
+    except Exception as e:
+        log.warning(f"Failed to decode decapsulated packet: {e}")
+        return
+
+    if IP not in original_pkt:
+        return
+
+    # Recover the ORIGINAL pcap timestamp, not the tunnel arrival time,
+    original_pkt.time = original_ts
+
+    process_original_packet(original_pkt)
+
+    envelope_reassembler.expire_stale()
  
  
 # Main
@@ -102,11 +133,7 @@ def main():
     log.info("Starting tcpdump capture pipe...")
  
     # tcpdump -i any: capture on ALL interfaces including ogstun
-    # -n: do not resolve hostnames
-    # -U: packet-buffered output
-    # -w: write raw pcap to stdout
-    # host 192.168.100: BPF filter: only UE subnet packets
-    # 2>/dev/null: suppress tcpdump startup messages
+
     tcpdump = subprocess.Popen(
         [
             "tcpdump",
@@ -124,8 +151,7 @@ def main():
  
     try:
         # sniff reads raw pcap bytes from the pipe; Scapy parses each
-        # packet and calls on_packet(). This runs forever until tcpdump
-        # exits or is killed.
+        # packet and calls on_packet()
         sniff(
             offline=tcpdump.stdout,
             prn=on_packet,
@@ -134,8 +160,7 @@ def main():
     except KeyboardInterrupt:
         log.info("Stopping capture...")
     finally:
-        # Flush whatever's left in the current window rather than silently
-        # dropping the last few packets on shutdown.
+        # Flush whatever's left in the current window 
         trailing_window = window_builder.flush()
         if trailing_window is not None:
             handle_finished_flow(trailing_window)

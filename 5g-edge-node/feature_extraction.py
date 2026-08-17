@@ -7,15 +7,53 @@ import pandas as pd
 # Copied from validate_5g_replay_pipeline.py's verified MODEL_SPECS --
 # CRITICAL: exact training order, never sorted or alphabetized.
 HEAVY_FEATURES = [
-    "Rate", "Tot sum", "Number", "Tot size", "IAT", "Header_Length",
-    "Min", "Max", "AVG", "Std", "Variance",
-    "syn_flag_number", "rst_flag_number", "psh_flag_number", "ack_flag_number",
-    "rst_count", "Protocol Type",
-]
  
-LITE_FEATURES = [
-    "IAT", "Protocol Type", "Header_Length", "Min", "fin_count", "rst_count",
+   "Rate",
+     "Tot sum",
+     "Number",
+     "Tot size",
+     "IAT",
+     "Header_Length",
+     "Min",
+     "Max",
+     "Variance",
+     "syn_flag_number",
+     "rst_flag_number",
+     "psh_flag_number",
+     "ack_flag_number",
+     "Protocol Type"
 ]
+
+LITE_FEATURES = [
+    "IAT",
+    "Protocol Type",
+    "Header_Length",
+    "Min",
+    "fin_count"
+]
+
+
+#     "Rate",
+#     "Tot sum",
+#     "Number",
+#     "Tot size",
+#     "IAT",
+#     "Header_Length",
+#     "Min",
+#     "Max",
+#     "Variance",
+#     "syn_flag_number",
+#     "rst_flag_number",
+#     "psh_flag_number",
+#     "ack_flag_number",
+#     "Protocol Type"
+#   ],
+#   "lite_features": [
+#     "IAT",
+#     "Protocol Type",
+#     "Header_Length",
+#     "Min",
+#     "fin_count"
  
 # Feature_extraction.py assigns 'Protocol Type' as the MODE of the raw
 # per-packet protocol numbers over the window. Switch to "mean" only if you
@@ -63,10 +101,7 @@ def compute_base_features(window):
  
 def vectorize(feats, feature_list) :
     # Orders a feature dict into the exact column order a model expects.
-    return pd.DataFrame(
-        [[feats.get(f, 0.0) for f in feature_list]],
-        columns=feature_list
-    )
+    return  pd.DataFrame([[feats[f] for f in feature_list]], columns=feature_list)
  
  
 def extract_heavy(window):

@@ -17,8 +17,7 @@ ETHERNET_HEADER_LEN = 14
 
 
 
-def _is_port(sport, dport, port):
-    return 1 if (sport == port or dport == port) else 0
+
 
 def wire_size(pkt):
     size = len(pkt)

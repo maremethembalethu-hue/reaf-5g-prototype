@@ -21,6 +21,6 @@ COPY . .
 
 # -u flag forces Python to run in unbuffered mode, this means log output appears in docker logs immediately
 #CMD ["python3", "-u", "capture.py"]
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
-CMD ["./entrypoint.sh"]
+
+
+CMD ["python3", "-u", "capture.py"]
