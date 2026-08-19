@@ -39,12 +39,35 @@ log = logging.getLogger(__name__)
 # Config
 UE_SUBNET    = os.getenv("UE_SUBNET", "192.168.100.0/24")
 EVIDENCE_DIR = os.getenv("EVIDENCE_DIR", "/evidence")
+EVAL_DIR = os.getenv("EVAL_DIR", "/evaluation")
 UE_PREFIX    = ".".join(UE_SUBNET.split(".")[:3])
 REAF_PORT = int(os.getenv("REAF_PORT", "9999"))
+
+EVAL_DIR.mkdir(parents=True, exist_ok=True)
+ITEMS_LOG = EVAL_DIR / "items_log.jsonl"
  
 window_builder = WindowBuilder()
 reassembler = FragmentReassembler()
 envelope_reassembler = EnvelopeReassembler()  
+
+def write_items(window, result, captured_ts):
+  
+    record = {
+        "captured_ts": captured_ts,
+        "flow_id": window.get("flow_id"),
+        "mixed_flow": window.get("mixed_flow", False),
+        "packet_ids": window.get("packet_ids", []),
+        "packet_count": window["packet_count"],
+        "predicted_label": result["attack_type"],
+        "confidence": result["confidence"],
+        "model_used": result["model_used"],
+    }
+    with open(ITEMS_LOG, "a") as f:
+        f.write(json.dumps(record) + "\n")
+        f.flush()
+
+    if window.get("mixed_flow"):
+        log.warning(f"Window straddled more than one flow_id ")
  
 def handle_finished_flow(window):
     result = classify_flow(window)
@@ -60,15 +83,16 @@ def handle_finished_flow(window):
         f"proto={window['proto']} | attack={result['attack_type']} | "
         f"conf={result['confidence']:.3f} | model={result['model_used']}"
     )
- 
+    write_items(window, result, ts)
     if should_acquire(result["attack_type"], result["confidence"]):
         collect_evidence(window["packets"], result, ts)
+        
  
  
 
 def process_original_packet(pkt):
     # DECAPSULATED original packet rather than directly on whatever
-    # Scapy sniffed off the wire.
+
     pkt = reassembler.feed(pkt, ts=time.time())
     if pkt is None:
         return  # mid-train fragment, or an incomplete set — wait or drop
@@ -77,9 +101,9 @@ def process_original_packet(pkt):
     if finished is not None:
         handle_finished_flow(finished)
 
-    stale_window = window_builder.expire_stale_partial_window()
-    if stale_window is not None:
-        handle_finished_flow(stale_window)
+    # stale_window = window_builder.expire_stale_partial_window()
+    # if stale_window is not None:
+    #     handle_finished_flow(stale_window)
 
     reassembler.expire_stale()
 
@@ -94,14 +118,12 @@ def on_packet(pkt):
         return
 
     udp_payload = bytes(pkt[UDP].payload)
-    result = envelope_reassembler.feed(udp_payload, ts=time.time())
-    if result is None:
-        return  # not a REAF envelope, or still waiting on more chunks
-
-    original_bytes, original_ts, _linktype = result
+    envelope = envelope_reassembler.feed(udp_payload, ts=time.time())
+    if envelope is None:
+        return  
 
     try:
-        original_pkt = IP(original_bytes)
+        original_pkt = IP(envelope["payload"])
     except Exception as e:
         log.warning(f"Failed to decode decapsulated packet: {e}")
         return
@@ -109,8 +131,12 @@ def on_packet(pkt):
     if IP not in original_pkt:
         return
 
-    # Recover the ORIGINAL pcap timestamp, not the tunnel arrival time,
-    original_pkt.time = original_ts
+    # Recover the ORIGINAL pcap timestamp
+    original_pkt.time = envelope["timestamp"]
+
+    # Carry envelope identity forward. Scapy's Packet.__setattr__ falls
+    original_pkt.flow_id = envelope["flow_id"]
+    original_pkt.packet_id = envelope["packet_id"]
 
     process_original_packet(original_pkt)
 

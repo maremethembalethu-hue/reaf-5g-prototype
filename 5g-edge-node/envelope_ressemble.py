@@ -38,7 +38,7 @@ class EnvelopeReassembler:
     # Receiver-side buffer that reassembles chunked envelopes back into
     # one original packet's raw bytes.
 
-    def __init__(self, timeout=5.0):
+    def __init__(self, timeout=30):
         # (flow_id, packet_id) -> {chunks: {idx: bytes}, count, first_seen, timestamp, linktype}
         self._buffers = {}
         self.timeout = timeout
@@ -56,7 +56,13 @@ class EnvelopeReassembler:
 
         if envelope["chunk_count"] == 1:
             self._buffers.pop(key, None)
-            return envelope["payload"], envelope["timestamp"], envelope["linktype"]
+            return {
+                "flow_id": envelope["flow_id"],
+                "packet_id": envelope["packet_id"],
+                "timestamp": envelope["timestamp"],
+                "linktype": envelope["linktype"],
+                "payload": envelope["payload"],
+            }
 
         entry = self._buffers.setdefault(key, {
             "chunks": {},
@@ -68,11 +74,17 @@ class EnvelopeReassembler:
         entry["chunks"][envelope["chunk_index"]] = envelope["payload"]
 
         if len(entry["chunks"]) < entry["count"]:
-            return None  # still waiting on more chunks
+            return None
 
         self._buffers.pop(key)
         original_bytes = b"".join(entry["chunks"][i] for i in range(entry["count"]))
-        return original_bytes, entry["timestamp"], entry["linktype"]
+        return {
+            "flow_id": envelope["flow_id"],
+            "packet_id": envelope["packet_id"],
+            "timestamp": entry["timestamp"],
+            "linktype": entry["linktype"],
+            "payload": original_bytes,
+        }
 
     def expire_stale(self, now=None):
         # Drops chunk sets whose remaining pieces

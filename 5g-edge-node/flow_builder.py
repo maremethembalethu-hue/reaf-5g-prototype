@@ -3,6 +3,7 @@
 
 
 import time
+import logging
 from scapy.all import IP, TCP, UDP, ARP
 
 from feature_extraction import aggregate_window
@@ -16,7 +17,7 @@ ASSUMED_L2_HEADER_LEN = 14
 ETHERNET_HEADER_LEN = 14
 
 
-
+log = logging.getLogger(__name__)
 
 
 def wire_size(pkt):
@@ -113,16 +114,22 @@ class WindowBuilder:
         self._rows = []
         self._packets = []
         self._last_pac_time = None
+        self._identity = []
 
     def add_packet(self, pkt, ts=None):
         #Feed one packet in. Returns a finished window record once window_size packets have been buffered, else None.
         if IP not in pkt:
             return None
         ts = ts if ts is not None else time.time()
-
+        
         row, self._last_pac_time = build_packet_row(pkt, ts, self._last_pac_time)
         self._rows.append(row)
         self._packets.append(pkt)
+        
+        self._identity.append({
+            "flow_id": getattr(pkt, "flow_id", None),
+            "packet_id": getattr(pkt, "packet_id", None),
+        })
 
         if len(self._rows) >= self.window_size:
             return self._finalize()
@@ -147,6 +154,16 @@ class WindowBuilder:
 
     def _finalize(self):
         features = aggregate_window(self._rows)
+        flow_ids = sorted({i["flow_id"] for i in self._identity if i["flow_id"] is not None})
+        packet_ids = sorted({i["packet_id"] for i in self._identity if i["packet_id"] is not None})
+        mixed_flow = len(flow_ids) > 1
+
+        if mixed_flow:
+            log.warning(
+                f"Window mixes packets from {len(flow_ids)} different flow_ids "
+                
+            )
+
         window = {
             "packet_count": len(self._rows),
             "start_time": self._rows[0]["ts"],
@@ -154,7 +171,12 @@ class WindowBuilder:
             "proto": features["Protocol Type"],
             "packets": self._packets,
             "features": features,
+            "flow_id": flow_ids[0] if len(flow_ids) == 1 else None,
+            "flow_ids": flow_ids,
+            "mixed_flow": mixed_flow,
+            "packet_ids": packet_ids,
         }
         self._rows = []
         self._packets = []
+        self._identity = []
         return window

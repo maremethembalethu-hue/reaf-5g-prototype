@@ -230,7 +230,7 @@ def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, u
     log.info(f"REPLAY | {Path(pcap_path).name} complete "
              f"(read={total}, sent={sent}, errors={errors}, "
              f"expected_attack={metadata.get('expected_attack', 'unknown')})")
-    return sent
+    return {"packets_read": total, "packets_sent": sent}
 
 
 def replay_mixed(pcap_paths, replay_speed=1.0, gap=3.0, iface=IFACE, target_ip=TARGET_IP):

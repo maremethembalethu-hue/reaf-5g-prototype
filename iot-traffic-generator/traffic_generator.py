@@ -16,7 +16,7 @@ _log.getLogger("scapy.interactive").setLevel(_log.ERROR)
 _log.getLogger("scapy.loading").setLevel(_log.ERROR)
 
 from scapy.all import IP, TCP, UDP, ICMP, send
-from replay_engine import replay_pcap, replay_mixed, replay_random
+from replay_engine import replay_pcap, replay_mixed, replay_random, id_for
 
 logging.basicConfig(
     level=logging.INFO,
@@ -123,7 +123,7 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
                         f"finished — stopping early at replay_id={job['replay_id']}.")
             break
  
-      
+        flow_id = id_for(job["pcap_path"])
         log.info(f"Replay {job['replay_id']}: {job['pcap_path']} "
                  f"(expected={job['expected_label']}, "
                 )
@@ -138,7 +138,7 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
         started_record = {
             "replay_id": job["replay_id"], "pcap_path": job["pcap_path"],
             "expected_label": job["expected_label"],
-            
+            "flow_id": flow_id,
             "status": "started",
             "start_ts": start_ts, "start_time": start_time,
         }
@@ -146,7 +146,7 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
             f.write(json.dumps(started_record) + "\n")
             f.flush()
  
-        replay_pcap(job["pcap_path"], replay_speed=replay_speed, target_ip=TARGET_IP, iface=IFACE,
+        pkt_sent= replay_pcap(job["pcap_path"], replay_speed=replay_speed, target_ip=TARGET_IP, iface=IFACE,
                     deadline=deadline)
  
         log.info(f"Replay {job['replay_id']} sent; waiting {SCHEDULER_DRAIN_SECONDS}s "
@@ -160,8 +160,11 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
             "replay_id": job["replay_id"], "pcap_path": job["pcap_path"],
             "expected_label": job["expected_label"],
             "status": "completed",
+            "flow_id": flow_id,
             "start_ts": start_ts, "start_time": start_time,
             "end_ts": end_ts, "end_time": end_time,
+            "packets_read": pkt_sent["packets_read"],
+            "packets_sent": pkt_sent["packets_sent"],
         }
         with open(TRUTH_LOG, "a") as f:
             f.write(json.dumps(record) + "\n")
