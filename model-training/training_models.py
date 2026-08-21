@@ -209,6 +209,43 @@ COLUMN_RENAME = {"Magnitue": "Magnitude"}  # fixes the CICIoT2023 raw-column typ
 def normalize_columns(df):
     return df.rename(columns=COLUMN_RENAME)
 
+DERIVED_CICIOT_COLUMNS = ["flow_duration", "Srate", "Drate", "Magnitude", "Radius", "Covariance", "Weight"]
+ 
+def missing_features(df, required_source_cols=("AVG", "Variance", "Number", "IAT", "Rate")):
+    df = df.copy()
+    missing_sources = [c for c in required_source_cols if c not in df.columns]
+    if missing_sources:
+        print(f"[WARN] Cannot derive missing CICIoT2023 features — source column(s) not present: {missing_sources}")
+        return df
+ 
+    added = []
+    if "Weight" not in df.columns:
+        df["Weight"] = df["Number"]
+        added.append("Weight")
+    if "Magnitude" not in df.columns:
+        df["Magnitude"] = np.sqrt(df["AVG"])
+        added.append("Magnitude")
+    if "Radius" not in df.columns:
+        df["Radius"] = np.sqrt(df["Variance"])
+        added.append("Radius")
+    if "Covariance" not in df.columns:
+        df["Covariance"] = df["Variance"]
+        added.append("Covariance")
+    if "Srate" not in df.columns:
+        df["Srate"] = df["Rate"]
+        added.append("Srate")
+    if "Drate" not in df.columns:
+        df["Drate"] = df["Rate"]
+        added.append("Drate")
+    if "flow_duration" not in df.columns:
+        df["flow_duration"] = df["IAT"] * df["Number"]
+        added.append("flow_duration")
+ 
+    if added:
+        print(f"Derived {len(added)} missing CICIoT2023 feature(s) from existing columns: {added}")
+    else:
+        print("No missing CICIoT2023 features to derive — all 7 already present.")
+    return df
 def clean_dataframe(df, drop_cols=None):
     #  Data Cleaning module: remove ID/index columns, remove missing/empty records, remove duplicates, remove non-finite numeric values.
     df = df.copy()
@@ -368,7 +405,7 @@ def tune_heavy_model(X_train, y_train, X_val, y_val, num_class, n_trials=15):
     study = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(seed=RANDOM_STATE))
     study.optimize(build_xgb_objective(X_train, y_train, X_val, y_val, num_class), n_trials=n_trials)
     print("Best macro-F1 (val):", study.best_value)
-    print("Best params:", study.best_params)
+    #print("Best params:", study.best_params)
     return study.best_params
 
 def train_heavy_model(X_train, y_train, X_val, y_val, num_class, best_params):
@@ -549,12 +586,21 @@ def label_to_binary(label_series, benign_labels):
 
 def evaluate_indomain_binary(model, X_test, y_test, label_encoder, benign_class_name="Benign_Final", model_name="model"):
     y_pred_class = model.predict(X_test)
-    benign_idx = list(label_encoder.classes_).index(benign_class_name)
+    
+    # Safe check for the benign index
+    classes_list = list(label_encoder.classes_)
+    if benign_class_name in classes_list:
+        benign_idx = classes_list.index(benign_class_name)
+    else:
+        print(f"Warning: '{benign_class_name}' not found in encoder classes: {classes_list}. Defaulting to index 0.")
+        benign_idx = 0  # Fallback standard
+        
     y_true_bin = (y_test.values != benign_idx).astype(int)
     y_pred_bin = (y_pred_class != benign_idx).astype(int)
     acc = accuracy_score(y_true_bin, y_pred_bin)
     p, r, f1, _ = precision_recall_fscore_support(y_true_bin, y_pred_bin, average="binary", zero_division=0)
     return {"model": model_name, "accuracy": acc, "precision": p, "recall": r, "f1": f1}
+
 
 def plot_external_confusion_matrix(result, model_name="model"):
     fig, ax = plt.subplots(figsize=(5, 5))
@@ -630,7 +676,7 @@ def run_pipeline(sample_frac_ciciot=0.02, optuna_trials=15, min_per_class=1000,
     # Flow Feature Extraction Engine
     ciciot_raw = load_ciciot2023_floored(sample_frac=sample_frac_ciciot, min_per_class=min_per_class)
     ciciot_raw = normalize_columns(ciciot_raw)
-
+    ciciot_raw = missing_features(ciciot_raw)
     # Data Cleaning & Normalization Module + Common Feature Processing Layer
     ciciot = clean_dataframe(ciciot_raw)
     ciciot, proto_encoder = encode_protocol(ciciot)
