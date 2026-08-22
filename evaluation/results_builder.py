@@ -25,7 +25,7 @@ def evaluate(path=DEFAULT_RESULTS, out_path=DEFAULT_OUT, benign_label="Benign"):
 
     y_true = [r["expected_label"] for r in rows]
     y_pred = [r["predicted_label"] for r in rows]
-    labels = sorted(set(y_true) | set(y_pred))
+    labels = sorted(set(y_true))
 
     acc = accuracy_score(y_true, y_pred)
     cm = confusion_matrix(y_true, y_pred, labels=labels)

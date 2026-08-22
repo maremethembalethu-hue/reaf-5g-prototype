@@ -95,8 +95,7 @@ def aggregate_window(rows):
     agg["Protocol Type"] = Counter(protocol_values).most_common(1)[0][0]
     # else: leave as the mean already computed above
  
-    for c in ("ack_count", "syn_count", "fin_count", "rst_count"):
-            agg[c] = sum(r[c] for r in rows)
+    agg["ack_count"] = sum(r["ack_count"] for r in rows)
     
     agg["Tot sum"] = sum(sizes)
     agg["Min"] = min(sizes)

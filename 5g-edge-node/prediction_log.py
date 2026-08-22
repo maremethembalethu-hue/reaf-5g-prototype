@@ -15,7 +15,7 @@ def log_prediction(flow, result):
     record = {
         "flow_start_time": flow["start_time"],
         "flow_last_time": flow["last_time"],
-        "captured_ts": flow["captured_ts"],
+
         "packet_count": flow["packet_count"],
         "proto": flow["proto"],
         "attack_type": result["attack_type"],

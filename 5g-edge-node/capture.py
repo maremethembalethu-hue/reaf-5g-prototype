@@ -7,6 +7,7 @@ import time
 import logging
 import json
 import subprocess
+from pathlib import Path
 from datetime import datetime, timezone
  
 from scapy.all import sniff, IP, UDP
@@ -39,7 +40,7 @@ log = logging.getLogger(__name__)
 # Config
 UE_SUBNET    = os.getenv("UE_SUBNET", "192.168.100.0/24")
 EVIDENCE_DIR = os.getenv("EVIDENCE_DIR", "/evidence")
-EVAL_DIR = os.getenv("EVAL_DIR", "/evaluation")
+EVAL_DIR = Path(os.getenv("EVAL_DIR", "/evaluation"))
 UE_PREFIX    = ".".join(UE_SUBNET.split(".")[:3])
 REAF_PORT = int(os.getenv("REAF_PORT", "9999"))
 

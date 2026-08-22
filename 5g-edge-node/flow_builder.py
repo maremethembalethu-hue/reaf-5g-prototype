@@ -9,7 +9,7 @@ from scapy.all import IP, TCP, UDP, ARP
 from feature_extraction import aggregate_window
 
 
-WINDOW_SIZE = 10
+WINDOW_SIZE = 30
 
 IDLE_FLUSH_SECONDS = 60.0
 
@@ -112,20 +112,34 @@ def build_packet_row(pkt, ts, last_pac_time):
         row["rst_flag_number"] = flag_values[2]
         row["psh_flag_number"] = flag_values[3]
         row["ack_flag_number"] = flag_values[4]
-        row["ece_flag_number"] = flag_values[6]
+   
         row["cwr_flag_number"] = flag_values[7]
 
         # Per-packet, NOT cumulative across the pcap -- see the note
         # above build_packet_row(). Summed across the window later in
         # aggregate_window().
         row["ack_count"] = row["ack_flag_number"]
-        row["syn_count"] = row["syn_flag_number"]
-        row["fin_count"] = row["fin_flag_number"]
-        row["rst_count"] = row["rst_flag_number"]
+      
 
     return row, ts
 
 
+# LITE_FEATURES = [
+#     "Tot size", "Protocol Type", 
+#     "fin_flag_number", "syn_flag_number",
+#      "Header_Length","UDP",
+#       "Min", "Max", "AVG",
+#       "Number","Std","TCP",]
+
+# HEAVY_FEATURES = [
+#     "Header_Length", "Protocol Type", 
+#     "fin_flag_number", "syn_flag_number", "rst_flag_number",
+#     "psh_flag_number", "ack_flag_number", 
+#     "cwr_flag_number", "ack_count",
+#      "HTTP", "HTTPS", "IAT",
+#     "SSH", "IRC", "TCP", "UDP",  "ICMP",
+#        "Tot sum", "Min", "Max", "AVG",
+#       "Number", "Variance",]
 
 class WindowBuilder:
     #Buffers packets into fixed-size windows and hands back an aggregated window record once WINDOW_SIZE packets have arrived.

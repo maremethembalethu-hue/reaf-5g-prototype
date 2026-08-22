@@ -15,6 +15,7 @@ services:
     volumes:
       - ./evidence:/evidence
       - ./evaluation:/evaluation
+      - ./5g-edge-node/pkt_debug_out:/app/pkt_debug_out
     environment:
       - CAPTURE_IFACE=ogstun
       - EVIDENCE_DIR=/evidence
@@ -41,6 +42,7 @@ services:
       - NET_ADMIN
     volumes:
       - ./evaluation:/evaluation
+      - ./iot-traffic-generator/pkt_debug_out:/app/pkt_debug_out
     environment:
       - UE_TUNNEL_IFACE=uesimtun0
       - TARGET_IP=${TARGET_IP:-192.168.100.1}
