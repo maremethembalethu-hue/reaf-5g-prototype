@@ -6,33 +6,52 @@ import pandas as pd
  
 # Copied from validate_5g_replay_pipeline.py's verified MODEL_SPECS --
 # CRITICAL: exact training order, never sorted or alphabetized.
-HEAVY_FEATURES = [
+# HEAVY_FEATURES = [
  
-   "Rate",
-     "Tot sum",
-     "Number",
-     "Tot size",
-     "IAT",
-     "Header_Length",
-     "Min",
-     "Max",
-     "Variance",
-     "syn_flag_number",
-     "rst_flag_number",
-     "psh_flag_number",
-     "ack_flag_number",
-     "Protocol Type"
-]
+#   "Rate",
+#     "Tot sum",
+#     "Number",
+#     "Tot size",
+#     "IAT",
+#     "Header_Length",
+#     "Min",
+#     "Max",
+#     "AVG",
+#     "Std",
+#     "Variance",
+#     "syn_flag_number",
+#     "rst_flag_number",
+#     "psh_flag_number",
+#     "ack_flag_number",
+#     "rst_count",
+#     "Protocol Type"
+# ]
+
+# LITE_FEATURES = [
+#       "IAT",
+#     "Protocol Type",
+#     "Header_Length",
+#     "Min",
+#     "fin_count",
+#     "rst_count"
+# ]
 
 LITE_FEATURES = [
-    "IAT",
-    "Protocol Type",
-    "Header_Length",
-    "Min",
-    "fin_count"
-]
+    "Tot size", "Protocol Type", 
+    "fin_flag_number", "syn_flag_number",
+     "Header_Length","UDP",
+      "Min", "Max", "AVG",
+      "Number","Std","TCP",]
 
-
+HEAVY_FEATURES = [
+    "Header_Length", "Protocol Type", 
+    "fin_flag_number", "syn_flag_number", "rst_flag_number",
+    "psh_flag_number", "ack_flag_number", 
+    "cwr_flag_number", "ack_count",
+     "HTTP", "HTTPS", "IAT",
+    "SSH", "IRC", "TCP", "UDP",  "ICMP",
+       "Tot sum", "Min", "Max", "AVG",
+      "Number", "Variance",]
 #     "Rate",
 #     "Tot sum",
 #     "Number",

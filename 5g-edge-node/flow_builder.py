@@ -38,7 +38,8 @@ def get_flag_values(tcp):
         int((flags & 0x40) != 0),  # ECE
         int((flags & 0x80) != 0),  # CWR
     ]
-    
+
+
 def build_packet_row(pkt, ts, last_pac_time):
     has_ip = IP in pkt
     has_arp = (not has_ip) and (ARP in pkt)
@@ -54,21 +55,26 @@ def build_packet_row(pkt, ts, last_pac_time):
         # Protocol Type stays 0 for ARP-only packets, same as the
         # original (proto_type is never set outside the IP branch).
         "Protocol Type": int(pkt[IP].proto) if has_ip else 0,
-        "Rate": 0.0,
+         "Rate": 0.0,
+    
         "fin_flag_number": 0,
         "syn_flag_number": 0,
         "rst_flag_number": 0,
         "psh_flag_number": 0,
         "ack_flag_number": 0,
-        "ece_flag_number": 0,
         "cwr_flag_number": 0,
         "ack_count": 0,
-        "syn_count": 0,
-        "fin_count": 0,
-        "rst_count": 0,
+
         "Tot size": wire_size(pkt),
         "IAT": iat,
         "Number": 1,
+        "TCP": 0,
+        "UDP": 0,
+        "ICMP": 0,
+        "HTTP": 0,
+        "HTTPS": 0,
+        "SSH": 0,
+        "IRC": 0,
     }
 
     if not has_ip:
@@ -76,14 +82,29 @@ def build_packet_row(pkt, ts, last_pac_time):
         return row, ts
 
     ip = pkt[IP]
+    
+    if ip.proto == 1:  # ICMP
+        row["ICMP"] = 1
 
     if ip.proto == 17 and UDP in pkt:
         row["Header_Length"] = 8.0
+        row["UDP"] = 1
 
     elif ip.proto == 6 and TCP in pkt:
         tcp = pkt[TCP]
         dataofs = tcp.dataofs if tcp.dataofs else 5
         row["Header_Length"] = int(dataofs) * 4
+        row["TCP"] = 1
+        
+        sport, dport = int(tcp.sport), int(tcp.dport)
+        if 80 in (sport, dport):
+            row["HTTP"] = 1
+        if 443 in (sport, dport):
+            row["HTTPS"] = 1
+        if 22 in (sport, dport):
+            row["SSH"] = 1
+        if sport in (194, 6667, 6697) or dport in (194, 6667, 6697):
+            row["IRC"] = 1
 
         flag_values = get_flag_values(tcp)
         row["fin_flag_number"] = flag_values[0]
@@ -154,6 +175,13 @@ class WindowBuilder:
 
     def _finalize(self):
         features = aggregate_window(self._rows)
+        # features["flow_duration"] = self._rows[-1]["ts"] - self._rows[0]["ts"]
+        # features["Weight"] = features.get("Number", len(self._rows))
+        # features["Magnitude"] = features["AVG"] ** 0.5 if features.get("AVG", 0) >= 0 else 0.0
+        # features["Radius"] = features["Variance"] ** 0.5 if features.get("Variance", 0) >= 0 else 0.0
+        # features["Covariance"] = features.get("Variance", 0.0)
+        # features["Srate"] = features.get("Rate", 0.0)
+        # features["Drate"] = features.get("Rate", 0.0)
         flow_ids = sorted({i["flow_id"] for i in self._identity if i["flow_id"] is not None})
         packet_ids = sorted({i["packet_id"] for i in self._identity if i["packet_id"] is not None})
         mixed_flow = len(flow_ids) > 1

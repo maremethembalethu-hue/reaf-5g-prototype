@@ -9,12 +9,12 @@ from resource_monitor import get_model_tier, get_metrics
  
 log = logging.getLogger(__name__)
  
-MODEL_DIR         = os.path.join(os.path.dirname(__file__), "trained_models/variation")
-HEAVY_MODEL_PATH  = os.path.join(MODEL_DIR, "heavy_legacy_xgboost_1.onnx")
-LITE_MODEL_PATH   = os.path.join(MODEL_DIR, "label_legacy_decision_tree_1.onnx")
-HEAVY_SCALER_PATH = os.path.join(MODEL_DIR, "heavy_legacy_scaler.pkl")
-LITE_SCALER_PATH  = os.path.join(MODEL_DIR, "lite_legacy_scaler.pkl")
-LABEL_ENCODER_PATH = os.path.join(MODEL_DIR, "label_encoder_legacy.pkl")
+MODEL_DIR         = os.path.join(os.path.dirname(__file__), "trained_models/variation2")
+HEAVY_MODEL_PATH  = os.path.join(MODEL_DIR, "heavy_xgboost_1.onnx")
+LITE_MODEL_PATH   = os.path.join(MODEL_DIR, "label_decision_tree_1.onnx")
+HEAVY_SCALER_PATH = os.path.join(MODEL_DIR, "heavy_scaler_1.pkl")
+LITE_SCALER_PATH  = os.path.join(MODEL_DIR, "lite_scaler_1.pkl")
+LABEL_ENCODER_PATH = os.path.join(MODEL_DIR, "label_encoder_1.pkl")
  
 _heavy_session = None
 _lite_session = None
