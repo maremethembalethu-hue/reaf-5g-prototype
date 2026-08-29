@@ -52,9 +52,11 @@ def build_packet_row(pkt, ts, last_pac_time):
     row = {
         "ts": ts,
         "Header_Length": 0.0,
-        # Protocol Type stays 0 for ARP-only packets, same as the
-        # original (proto_type is never set outside the IP branch).
         "Protocol Type": int(pkt[IP].proto) if has_ip else 0,
+        # CICIoT2023's "Duration" column is the IP Time-To-Live, not a time span.
+        "Duration": float(pkt[IP].ttl) if has_ip else 0.0,
+        "IPv": 1 if has_ip else 0,
+        "ARP": 1 if has_arp else 0,
          "Rate": 0.0,
     
         "fin_flag_number": 0,
@@ -62,8 +64,13 @@ def build_packet_row(pkt, ts, last_pac_time):
         "rst_flag_number": 0,
         "psh_flag_number": 0,
         "ack_flag_number": 0,
+        "ece_flag_number": 0,
         "cwr_flag_number": 0,
         "ack_count": 0,
+        "syn_count": 0,
+        "fin_count": 0,
+        "rst_count": 0,
+        "urg_count": 0,
 
         "Tot size": wire_size(pkt),
         "IAT": iat,
@@ -75,6 +82,10 @@ def build_packet_row(pkt, ts, last_pac_time):
         "HTTPS": 0,
         "SSH": 0,
         "IRC": 0,
+        "DNS": 0,
+        "Telnet": 0,
+        "SMTP": 0,
+        "DHCP": 0,
     }
 
     if not has_ip:
@@ -90,6 +101,12 @@ def build_packet_row(pkt, ts, last_pac_time):
         row["Header_Length"] = 8.0
         row["UDP"] = 1
 
+        udp = pkt[UDP]
+        usport, udport = int(udp.sport), int(udp.dport)
+        if 53 in (usport, udport):
+            row["DNS"] = 1
+        if 67 in (usport, udport) or 68 in (usport, udport):
+            row["DHCP"] = 1
     elif ip.proto == 6 and TCP in pkt:
         tcp = pkt[TCP]
         dataofs = tcp.dataofs if tcp.dataofs else 5
@@ -105,6 +122,12 @@ def build_packet_row(pkt, ts, last_pac_time):
             row["SSH"] = 1
         if sport in (194, 6667, 6697) or dport in (194, 6667, 6697):
             row["IRC"] = 1
+        if 53 in (sport, dport):
+            row["DNS"] = 1
+        if 23 in (sport, dport):
+            row["Telnet"] = 1
+        if 25 in (sport, dport):
+            row["SMTP"] = 1
 
         flag_values = get_flag_values(tcp)
         row["fin_flag_number"] = flag_values[0]
@@ -112,13 +135,14 @@ def build_packet_row(pkt, ts, last_pac_time):
         row["rst_flag_number"] = flag_values[2]
         row["psh_flag_number"] = flag_values[3]
         row["ack_flag_number"] = flag_values[4]
-   
+        row["ece_flag_number"] = flag_values[6]
         row["cwr_flag_number"] = flag_values[7]
 
-        # Per-packet, NOT cumulative across the pcap -- see the note
-        # above build_packet_row(). Summed across the window later in
-        # aggregate_window().
         row["ack_count"] = row["ack_flag_number"]
+        row["syn_count"] = row["syn_flag_number"]
+        row["fin_count"] = row["fin_flag_number"]
+        row["rst_count"] = row["rst_flag_number"]
+        row["urg_count"] = flag_values[5]
       
 
     return row, ts
@@ -189,13 +213,9 @@ class WindowBuilder:
 
     def _finalize(self):
         features = aggregate_window(self._rows)
-        # features["flow_duration"] = self._rows[-1]["ts"] - self._rows[0]["ts"]
-        # features["Weight"] = features.get("Number", len(self._rows))
-        # features["Magnitude"] = features["AVG"] ** 0.5 if features.get("AVG", 0) >= 0 else 0.0
-        # features["Radius"] = features["Variance"] ** 0.5 if features.get("Variance", 0) >= 0 else 0.0
-        # features["Covariance"] = features.get("Variance", 0.0)
-        # features["Srate"] = features.get("Rate", 0.0)
-        # features["Drate"] = features.get("Rate", 0.0)
+        features["flow_duration"] = self._rows[-1]["ts"] - self._rows[0]["ts"]
+        features["Covariance"] = features.get("Variance", 0.0)
+        features["Drate"] = features.get("Rate", 0.0)
         flow_ids = sorted({i["flow_id"] for i in self._identity if i["flow_id"] is not None})
         packet_ids = sorted({i["packet_id"] for i in self._identity if i["packet_id"] is not None})
         mixed_flow = len(flow_ids) > 1

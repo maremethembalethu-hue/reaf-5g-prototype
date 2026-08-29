@@ -37,21 +37,55 @@ import pandas as pd
 # ]
 
 LITE_FEATURES = [
-    "Tot size", "Protocol Type", 
-    "fin_flag_number", "syn_flag_number",
-     "Header_Length","UDP",
-      "Min", "Max", "AVG",
-      "Number","Std","TCP",]
+     "IAT",
+    "Header_Length",
+    "Max",
+    "urg_count",
+    "Min",
+    "fin_flag_number",
+    "ICMP",
+    "syn_flag_number",
+    "Variance",
+    "rst_count",
+    "UDP"]
 
 HEAVY_FEATURES = [
-    "Header_Length", "Protocol Type", 
-    "fin_flag_number", "syn_flag_number", "rst_flag_number",
-    "psh_flag_number", "ack_flag_number", 
-    "cwr_flag_number", "ack_count",
-     "HTTP", "HTTPS", "IAT",
-    "SSH", "IRC", "TCP", "UDP",  "ICMP",
-       "Tot sum", "Min", "Max", "AVG",
-      "Number", "Variance",]
+     "flow_duration",
+    "Header_Length",
+    "Protocol Type",
+    "Duration",
+    "Rate",
+    "Drate",
+    "fin_flag_number",
+    "syn_flag_number",
+    "rst_flag_number",
+    "psh_flag_number",
+    "ack_flag_number",
+    "ece_flag_number",
+    "cwr_flag_number",
+    "syn_count",
+    "urg_count",
+    "fin_count",
+    "rst_count",
+    "HTTP",
+    "HTTPS",
+    "DNS",
+    "Telnet",
+    "SMTP",
+    "SSH",
+    "IRC",
+    "TCP",
+    "UDP",
+    "DHCP",
+    "ARP",
+    "ICMP",
+    "IPv",
+    "Tot sum",
+    "Min",
+    "Max",
+    "IAT",
+    "Covariance",
+    "Variance"]
 #     "Rate",
 #     "Tot sum",
 #     "Number",
@@ -95,7 +129,8 @@ def aggregate_window(rows):
     agg["Protocol Type"] = Counter(protocol_values).most_common(1)[0][0]
     # else: leave as the mean already computed above
  
-    agg["ack_count"] = sum(r["ack_count"] for r in rows)
+    for c in ("ack_count", "syn_count", "fin_count", "rst_count", "urg_count"):
+        agg[c] = sum(r[c] for r in rows)
     
     agg["Tot sum"] = sum(sizes)
     agg["Min"] = min(sizes)
