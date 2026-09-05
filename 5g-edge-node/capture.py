@@ -1,6 +1,5 @@
-
 # REAF-5G Edge Node Real-time packet capture inside the UPF network namespace Capture-py.
-
+# capture.py
 import os
 import sys
 import time
@@ -10,16 +9,17 @@ import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
  
-from scapy.all import sniff, IP, UDP
+from scapy.all import sniff, IP, UDP, ARP, Ether, IPv6
 from fragment_reassembly import FragmentReassembler
- 
-from flow_builder import WindowBuilder
-from model_engine import classify_flow
+
+#from flow_builder import WindowBuilder
+from model_engine import classify_flow, register_w100_result
 from trigger import should_acquire
 from evidence_collect import collect_evidence
 from prediction_log import log_prediction
 from pkt_debug import inspect_packet 
 from envelope_ressemble import EnvelopeReassembler
+from flow_builder import WindowBuilder
 sys.stdout.reconfigure(line_buffering=True)
  
 import logging as _log
@@ -27,7 +27,8 @@ _log.getLogger("scapy.runtime").setLevel(_log.ERROR)
 _log.getLogger("scapy.interactive").setLevel(_log.ERROR)
 _log.getLogger("scapy.loading").setLevel(_log.ERROR)
  
- 
+
+_LINKTYPE_DECODERS = {1: Ether, 101: IP, 228: IP, 229: IPv6}  
 # Logging
 logging.basicConfig(
     level=logging.INFO,
@@ -47,9 +48,11 @@ REAF_PORT = int(os.getenv("REAF_PORT", "9999"))
 EVAL_DIR.mkdir(parents=True, exist_ok=True)
 ITEMS_LOG = EVAL_DIR / "items_log.jsonl"
  
-window_builder = WindowBuilder()
+window_builder_10 = WindowBuilder(window_size=10)
+window_builder_100 = WindowBuilder(window_size=100)
+_total_packets_processed = 0
 reassembler = FragmentReassembler()
-envelope_reassembler = EnvelopeReassembler()  
+envelope_reassembler = EnvelopeReassembler()
 
 def write_items(window, result, captured_ts):
   
@@ -69,42 +72,94 @@ def write_items(window, result, captured_ts):
 
     if window.get("mixed_flow"):
         log.warning(f"Window straddled more than one flow_id ")
+
+
+def _insufficient_data_result():
+    return {
+        "label": "[?? PARTIAL ]", "attack_type": "InsufficientData", "confidence": 0.0,
+        "model_used": "none", "cpu_percent": 0.0, "ram_percent": 0.0, "pred_class": "InsufficientData",
+    }
  
-def handle_finished_flow(window):
-    result = classify_flow(window)
+def handle_finished_flow(window, position=None):
+    if window["packet_count"] != window_builder_10.window_size:
+        # Stale/shutdown partial window — not a genuine 10-packet sample,
+        # matches neither trained scale. Classifying it would just feed the
+        # model an off-distribution input it's never seen; log and skip.
+        result = _insufficient_data_result()
+        write_items(window, result, datetime.now(timezone.utc).isoformat())
+        return
+
+    result = classify_flow(window, position=position)
     log_prediction(window, result)
- 
- 
-    #log.info(f"LIVE_FEATURES {json.dumps(window['features'], default=str)}")
+
     ts = datetime.now(timezone.utc).isoformat()
     n_pkts = window["packet_count"]
     duration = window["last_time"] - window["start_time"]
     log.info(
         f"{result['label']} {ts} | window of {n_pkts} pkts over {duration:.2f}s | "
-        f"proto={window['proto']} | attack={result['attack_type']} | "
+        f" attack={result['attack_type']} | "
         f"conf={result['confidence']:.3f} | model={result['model_used']}"
     )
     write_items(window, result, ts)
     if should_acquire(result["attack_type"], result["confidence"]):
         collect_evidence(window["packets"], result, ts)
-        
- 
- 
+
+
+def handle_finished_w100(window, position):
+    # w=100 windows never gate on their own — they only ever EXIST to
+    # override the w=10 stage2 answer for Flood/Mirai  Still logged/acted on like a normal detection
+    # event so it's auditable, tagged distinctly via model_used.
+    if window["packet_count"] != window_builder_100.window_size:
+        result = _insufficient_data_result()
+        write_items(window, result, datetime.now(timezone.utc).isoformat())
+        return
+
+    result = register_w100_result(window, position)
+    log_prediction(window, result)
+    ts = datetime.now(timezone.utc).isoformat()
+    n_pkts = window["packet_count"]
+    duration = window["last_time"] - window["start_time"]
+    log.info(
+        f"{result['label']} {ts} | [w100] window of {n_pkts} pkts over {duration:.2f}s | "
+        f" attack={result['attack_type']} | "
+        f"conf={result['confidence']:.3f} | model={result['model_used']}"
+    )
+    write_items(window, result, ts)
+    if should_acquire(result["attack_type"], result["confidence"]):
+        collect_evidence(window["packets"], result, ts)
 
 def process_original_packet(pkt):
     # DECAPSULATED original packet rather than directly on whatever
+    global _total_packets_processed
 
     pkt = reassembler.feed(pkt, ts=time.time())
     if pkt is None:
         return  # mid-train fragment, or an incomplete set — wait or drop
+    inspect_packet(pkt, "capture")
+    ts = float(pkt.time)
 
-    finished = window_builder.add_packet(pkt, ts=float(pkt.time))
-    if finished is not None:
-        handle_finished_flow(finished)
+    _total_packets_processed += 1
+    position = _total_packets_processed
 
-    # stale_window = window_builder.expire_stale_partial_window()
-    # if stale_window is not None:
-    #     handle_finished_flow(stale_window)
+    # Both builders see EVERY packet, independently accumulating toward
+    # their own window_size. position is the shared, 1:1-synchronized packet
+    # count both builders were fed up to, used to line up which w=10 windows
+    # fall inside which w=100 window for the override check in classify_flow.
+    finished_10 = window_builder_10.add_packet(pkt, ts=ts)
+    if finished_10 is not None:
+        handle_finished_flow(finished_10, position=position)
+
+    finished_100 = window_builder_100.add_packet(pkt, ts=ts)
+    if finished_100 is not None:
+        handle_finished_w100(finished_100, position=position)
+
+    stale_10 = window_builder_10.expire_stale_partial_window()
+    if stale_10 is not None:
+        handle_finished_flow(stale_10, position=position)
+
+    stale_100 = window_builder_100.expire_stale_partial_window()
+    if stale_100 is not None:
+        handle_finished_w100(stale_100, position=position)
 
     reassembler.expire_stale()
 
@@ -124,20 +179,20 @@ def on_packet(pkt):
         return  
 
     try:
-        original_pkt = IP(envelope["payload"])
+        decoder = _LINKTYPE_DECODERS.get(envelope["linktype"], Ether)
+        original_pkt = decoder(envelope["payload"])
     except Exception as e:
         log.warning(f"Failed to decode decapsulated packet: {e}")
         return
 
+
     if IP not in original_pkt:
         return
 
-    # Recover the ORIGINAL pcap timestamp
     original_pkt.time = envelope["timestamp"]
-
-    # Carry envelope identity forward. Scapy's Packet.__setattr__ falls
     original_pkt.flow_id = envelope["flow_id"]
     original_pkt.packet_id = envelope["packet_id"]
+    original_pkt.linktype = envelope["linktype"]
 
     process_original_packet(original_pkt)
 
@@ -151,8 +206,8 @@ def main():
     log.info(f"Method    : tcpdump pipe -> Scapy")
     log.info(f"UE filter : {UE_SUBNET}  (prefix: {UE_PREFIX}.*)")
     log.info(f"Evidence  : {EVIDENCE_DIR}")
-    log.info(f"Window    : {window_builder.window_size} packets "
-             f"(idle flush after {window_builder.idle_flush_seconds}s)")
+    log.info(f"Window    : {window_builder_10.window_size} packets (stage1/stage2 fast path) "
+             f"+ {window_builder_100.window_size} packets (stage2 Flood/Mirai override, dual-window)")
  
     for subdir in ["packets", "memory", "processes", "syslogs"]:
         os.makedirs(os.path.join(EVIDENCE_DIR, subdir), exist_ok=True)
@@ -187,10 +242,13 @@ def main():
     except KeyboardInterrupt:
         log.info("Stopping capture...")
     finally:
-        # Flush whatever's left in the current window 
-        trailing_window = window_builder.flush()
-        if trailing_window is not None:
-            handle_finished_flow(trailing_window)
+        # Flush whatever's left in either window
+        trailing_10 = window_builder_10.flush()
+        if trailing_10 is not None:
+            handle_finished_flow(trailing_10, position=_total_packets_processed)
+        trailing_100 = window_builder_100.flush()
+        if trailing_100 is not None:
+            handle_finished_w100(trailing_100, position=_total_packets_processed)
         tcpdump.terminate()
  
  

@@ -38,7 +38,7 @@ class EnvelopeReassembler:
     # Receiver-side buffer that reassembles chunked envelopes back into
     # one original packet's raw bytes.
 
-    def __init__(self, timeout=30):
+    def __init__(self, timeout=10):
         # (flow_id, packet_id) -> {chunks: {idx: bytes}, count, first_seen, timestamp, linktype}
         self._buffers = {}
         self.timeout = timeout

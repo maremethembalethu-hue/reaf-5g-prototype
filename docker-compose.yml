@@ -21,6 +21,8 @@ services:
       - EVIDENCE_DIR=/evidence
       - UE_SUBNET=192.168.100.0/24
       - USE_RFC3161=false
+      - DEBUG_FEATURES=1
+      - PACKET_TRACE=1
     restart: unless-stopped
     deploy:
       resources:
@@ -48,7 +50,9 @@ services:
       - TARGET_IP=${TARGET_IP:-192.168.100.1}
       - MODE=${MODE:-synthetic}
       - SEND_INTERVAL=2
+      - DEBUG_FEATURES=1
       - REPLAY_SPEED=1.0
+      - PACKET_TRACE=1
       - MAX_RUNTIME_SECONDS=1200
       - PCAP_PATH=pre-selected/replay_pcaps_contiguous/Benign_Final/BenignTraffic_contiguous_sample.pcap
     restart: "no"
