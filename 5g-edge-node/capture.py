@@ -1,5 +1,4 @@
-# REAF-5G Edge Node Real-time packet capture inside the UPF network namespace Capture-py.
-# capture.py
+
 import os
 import sys
 import time
@@ -11,7 +10,7 @@ from datetime import datetime, timezone
  
 from scapy.all import sniff, IP, UDP, ARP, Ether, IPv6
 from fragment_reassembly import FragmentReassembler
-
+ 
 #from flow_builder import WindowBuilder
 from model_engine import classify_flow, register_w100_result
 from trigger import should_acquire
@@ -27,7 +26,7 @@ _log.getLogger("scapy.runtime").setLevel(_log.ERROR)
 _log.getLogger("scapy.interactive").setLevel(_log.ERROR)
 _log.getLogger("scapy.loading").setLevel(_log.ERROR)
  
-
+ 
 _LINKTYPE_DECODERS = {1: Ether, 101: IP, 228: IP, 229: IPv6}  
 # Logging
 logging.basicConfig(
@@ -44,7 +43,7 @@ EVIDENCE_DIR = os.getenv("EVIDENCE_DIR", "/evidence")
 EVAL_DIR = Path(os.getenv("EVAL_DIR", "/evaluation"))
 UE_PREFIX    = ".".join(UE_SUBNET.split(".")[:3])
 REAF_PORT = int(os.getenv("REAF_PORT", "9999"))
-
+ 
 EVAL_DIR.mkdir(parents=True, exist_ok=True)
 ITEMS_LOG = EVAL_DIR / "items_log.jsonl"
  
@@ -53,7 +52,7 @@ window_builder_100 = WindowBuilder(window_size=100)
 _total_packets_processed = 0
 reassembler = FragmentReassembler()
 envelope_reassembler = EnvelopeReassembler()
-
+ 
 def write_items(window, result, captured_ts):
   
     record = {
@@ -69,11 +68,11 @@ def write_items(window, result, captured_ts):
     with open(ITEMS_LOG, "a") as f:
         f.write(json.dumps(record) + "\n")
         f.flush()
-
+ 
     if window.get("mixed_flow"):
         log.warning(f"Window straddled more than one flow_id ")
-
-
+ 
+ 
 def _insufficient_data_result():
     return {
         "label": "[?? PARTIAL ]", "attack_type": "InsufficientData", "confidence": 0.0,
@@ -88,10 +87,10 @@ def handle_finished_flow(window, position=None):
         result = _insufficient_data_result()
         write_items(window, result, datetime.now(timezone.utc).isoformat())
         return
-
+ 
     result = classify_flow(window, position=position)
     log_prediction(window, result)
-
+ 
     ts = datetime.now(timezone.utc).isoformat()
     n_pkts = window["packet_count"]
     duration = window["last_time"] - window["start_time"]
@@ -103,17 +102,18 @@ def handle_finished_flow(window, position=None):
     write_items(window, result, ts)
     if should_acquire(result["attack_type"], result["confidence"]):
         collect_evidence(window["packets"], result, ts)
-
-
+ 
+ 
 def handle_finished_w100(window, position):
     # w=100 windows never gate on their own — they only ever EXIST to
-    # override the w=10 stage2 answer for Flood/Mirai  Still logged/acted on like a normal detection
+    # override the w=10 stage2 answer for Flood/Mirai (see model_engine.
+    # register_w100_result). Still logged/acted on like a normal detection
     # event so it's auditable, tagged distinctly via model_used.
     if window["packet_count"] != window_builder_100.window_size:
         result = _insufficient_data_result()
         write_items(window, result, datetime.now(timezone.utc).isoformat())
         return
-
+ 
     result = register_w100_result(window, position)
     log_prediction(window, result)
     ts = datetime.now(timezone.utc).isoformat()
@@ -127,20 +127,20 @@ def handle_finished_w100(window, position):
     write_items(window, result, ts)
     if should_acquire(result["attack_type"], result["confidence"]):
         collect_evidence(window["packets"], result, ts)
-
+ 
 def process_original_packet(pkt):
     # DECAPSULATED original packet rather than directly on whatever
     global _total_packets_processed
-
+ 
     pkt = reassembler.feed(pkt, ts=time.time())
     if pkt is None:
         return  # mid-train fragment, or an incomplete set — wait or drop
     inspect_packet(pkt, "capture")
     ts = float(pkt.time)
-
+ 
     _total_packets_processed += 1
     position = _total_packets_processed
-
+ 
     # Both builders see EVERY packet, independently accumulating toward
     # their own window_size. position is the shared, 1:1-synchronized packet
     # count both builders were fed up to, used to line up which w=10 windows
@@ -148,22 +148,22 @@ def process_original_packet(pkt):
     finished_10 = window_builder_10.add_packet(pkt, ts=ts)
     if finished_10 is not None:
         handle_finished_flow(finished_10, position=position)
-
+ 
     finished_100 = window_builder_100.add_packet(pkt, ts=ts)
     if finished_100 is not None:
         handle_finished_w100(finished_100, position=position)
-
+ 
     stale_10 = window_builder_10.expire_stale_partial_window()
     if stale_10 is not None:
         handle_finished_flow(stale_10, position=position)
-
+ 
     stale_100 = window_builder_100.expire_stale_partial_window()
     if stale_100 is not None:
         handle_finished_w100(stale_100, position=position)
-
+ 
     reassembler.expire_stale()
-
-
+ 
+ 
 def on_packet(pkt):
     # What actually arrives here is the OUTER carrier packet 
     # It must be decapsulated before anything downstream (feature
@@ -172,30 +172,29 @@ def on_packet(pkt):
         return
     if pkt[UDP].sport != REAF_PORT and pkt[UDP].dport != REAF_PORT:
         return
-
+ 
     udp_payload = bytes(pkt[UDP].payload)
     envelope = envelope_reassembler.feed(udp_payload, ts=time.time())
     if envelope is None:
         return  
-
+ 
     try:
         decoder = _LINKTYPE_DECODERS.get(envelope["linktype"], Ether)
         original_pkt = decoder(envelope["payload"])
     except Exception as e:
         log.warning(f"Failed to decode decapsulated packet: {e}")
         return
-
-
+ 
     if IP not in original_pkt:
         return
-
+ 
     original_pkt.time = envelope["timestamp"]
     original_pkt.flow_id = envelope["flow_id"]
     original_pkt.packet_id = envelope["packet_id"]
     original_pkt.linktype = envelope["linktype"]
-
+ 
     process_original_packet(original_pkt)
-
+ 
     envelope_reassembler.expire_stale()
  
  
@@ -215,7 +214,7 @@ def main():
     log.info("Starting tcpdump capture pipe...")
  
     # tcpdump -i any: capture on ALL interfaces including ogstun
-
+ 
     tcpdump = subprocess.Popen(
         [
             "tcpdump",

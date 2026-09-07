@@ -5,6 +5,7 @@ from scapy.all import IP, TCP, UDP, ARP
  
 from feature_extraction import aggregate_window
  
+ 
 
 WINDOW_SIZE = 10
  
@@ -138,7 +139,21 @@ def build_packet_row(pkt, ts, last_pac_time):
  
  
 class WindowBuilder:
-    
+    # Groups EVERY incoming packet — regardless of which flow/connection it
+    # belongs to — into strict, sequential, non-overlapping groups of
+    # exactly window_size packets. This matches the official CICIoT2023
+    # extractor exactly (Feature_extraction.py's pcap_evaluation(): n_rows=10,
+    # sliced_df = processed_df[last_row:last_row+n_rows] over the WHOLE pcap
+    # in file order — no flow/5-tuple grouping anywhere in that code).
+    # Confirmed directly against real training data: Number=10 in every row
+    # of a sampled Benign_Final CSV, with no exceptions. Previous versions of
+    # this file used a time-based window (up to 1.0s or 500 packets) based on
+    # a wrong assumption that training used whole-flow or per-flow
+    # aggregation — it doesn't; it's just "the next 10 packets," period.
+    # flow_id/mixed_flow are still recorded per window for evaluation/logging
+    # (joining predictions back to a replay job's expected label), but no
+    # longer influence when a window closes — mixing flows is EXPECTED, not
+    # a defect, since training data was built the same way.
     def __init__(self, window_size=WINDOW_SIZE, idle_flush_seconds=IDLE_FLUSH_SECONDS):
         self.window_size = window_size
         self.idle_flush_seconds = idle_flush_seconds
@@ -149,7 +164,15 @@ class WindowBuilder:
         self._window_start_ts = None    # arrival-order: embedded ts of the FIRST packet added
         self._true_min_ts = None        # chronological: min embedded ts seen so far
         self._true_max_ts = None        # chronological: max embedded ts seen so far
-        self._real_window_opened_at = None 
+        self._real_window_opened_at = None  # REAL wall-clock time.time() — for idle detection
+                                              # ONLY. Must never be the packets' own embedded
+                                              # ts: sampled replay pcaps can contain genuine,
+                                              # arbitrarily large embedded-timestamp jumps at
+                                              # block seams (confirmed directly — one sample's
+                                              # own manifest recorded a ~73768s jump), which have
+                                              # nothing to do with real capture silence. Idle
+                                              # detection is inherently a real-time concept and
+                                              # must use the real clock, not replayed history.
  
     def add_packet(self, pkt, ts=None):
         if IP not in pkt:
@@ -182,7 +205,7 @@ class WindowBuilder:
         return None
  
     def expire_stale_partial_window(self):
-        # Uses REAL wall-clock time only
+       
         if not self._rows:
             return None
         if time.time() - self._real_window_opened_at >= self.idle_flush_seconds:
@@ -198,8 +221,7 @@ class WindowBuilder:
         features = aggregate_window(self._rows)
         features["flow_duration"] = self._rows[-1]["ts"] - self._rows[0]["ts"]
  
-        # Arrival-order span Counted and surfaced here
-        # rather than silently baked into a wrong feature value.
+     
         ts_values = [r["ts"] for r in self._rows]
         true_min_ts, true_max_ts = self._true_min_ts, self._true_max_ts
         out_of_order_count = sum(
@@ -211,8 +233,6 @@ class WindowBuilder:
         packet_ids = sorted({i["packet_id"] for i in self._identity if i["packet_id"] is not None})
         mixed_flow = len(flow_ids) > 1
  
-        # Mixing flows within a window is EXPECTED and matches training
-        
         if mixed_flow:
             log.debug(f"Window spans {len(flow_ids)} different flow_ids (expected — "
                       f"windows are a fixed packet count, not per-flow)")
