@@ -7,6 +7,7 @@ import logging
 import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
+from label_mapping import map_to_family
 
 sys.stdout.reconfigure(line_buffering=True)
 
@@ -137,7 +138,7 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
         # survives a crash/Ctrl+C/docker stop even if replay_pcap() never returns.
         started_record = {
             "replay_id": job["replay_id"], "pcap_path": job["pcap_path"],
-            "expected_label": job["expected_label"],
+            "expected_label":map_to_family( job["expected_label"]),
             "flow_id": flow_id,
             "status": "started",
             "start_ts": start_ts, "start_time": start_time,
@@ -146,8 +147,15 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
             f.write(json.dumps(started_record) + "\n")
             f.flush()
  
-        pkt_sent= replay_pcap(job["pcap_path"], replay_speed=replay_speed, target_ip=TARGET_IP, iface=IFACE,
-                    deadline=deadline)
+        params = job.get("recommended_replay_params") or {}
+        job_replay_speed = params.get("suggested_replay_speed", replay_speed)
+        job_max_delay = params.get("suggested_max_delay")  # None if manifest predates this field
+
+        log.info(f"Replay {job['replay_id']}: using replay_speed={job_replay_speed}x "
+                 f"MAX_DELAY={job_max_delay}")
+
+        pkt_sent = replay_pcap(job["pcap_path"], replay_speed=job_replay_speed, target_ip=TARGET_IP, iface=IFACE,
+                    deadline=deadline, MAX_DELAY=job_max_delay)
  
         log.info(f"Replay {job['replay_id']} sent; waiting {SCHEDULER_DRAIN_SECONDS}s "
                  f"for the flow table to drain before the next job...")
@@ -158,7 +166,7 @@ def run_manifest(manifest_path=MANIFEST_PATH, replay_speed=REPLAY_SPEED):
  
         record = {
             "replay_id": job["replay_id"], "pcap_path": job["pcap_path"],
-            "expected_label": job["expected_label"],
+            "expected_label":map_to_family( job["expected_label"]),
             "status": "completed",
             "flow_id": flow_id,
             "start_ts": start_ts, "start_time": start_time,

@@ -10,12 +10,14 @@ import hashlib
 
 from pathlib import Path
 
-DEFAULT_EVIDENCE_DIR = os.getenv("EVIDENCE_DIR", "evidence")
+CODE_DIR = Path(__file__).resolve().parent
+
+DEFAULT_EVIDENCE_DIR =   CODE_DIR.parent / Path(os.getenv("EVIDENCE_DIR", "evidence"))
 DEFAULT_JOINED_RESULTS = "evaluation/joined_results.csv"
 DEFAULT_OUT = "evaluation/forensic_validation_report.json"
 
 
-def hash_directory(directory: Path) -> str:
+def hash_directory(directory):
     sha256 = hashlib.sha256()
     for root, _, files in os.walk(directory):
         for filename in sorted(files):
@@ -25,7 +27,7 @@ def hash_directory(directory: Path) -> str:
     return sha256.hexdigest()
 
 
-def verify_chain(coc_log: Path):
+def verify_chain(coc_log):
     # Recomputes every entry_hash and bundle_hash independently and checks
     # the previous_hash links form an unbroken chain.
     if not coc_log.exists():
@@ -46,7 +48,14 @@ def verify_chain(coc_log: Path):
         if recomputed_entry_hash != entry["entry_hash"]:
             problems.append(f"entry {i} ({entry['incident_id']}): entry_hash does not match recomputed value")
 
-        bundle_dir = Path(entry["bundle_dir"])
+        logged_bundle_path = Path(entry["bundle_dir"])
+
+        if str(logged_bundle_path).startswith("/evidence/"):
+            bundle_dir = CODE_DIR.parent / "evidence" / logged_bundle_path.relative_to("/evidence")
+        elif logged_bundle_path.is_absolute():
+            bundle_dir = logged_bundle_path
+        else:
+            bundle_dir = CODE_DIR.parent / logged_bundle_path
         if bundle_dir.exists():
             recomputed_bundle_hash = hash_directory(bundle_dir)
             if recomputed_bundle_hash != entry["bundle_hash"]:

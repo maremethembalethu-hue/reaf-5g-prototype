@@ -1,4 +1,3 @@
-
 import json
 import csv
 from pathlib import Path
@@ -9,6 +8,9 @@ DEFAULT_GROUND_TRUTH = "truth_log.jsonl"
 DEFAULT_OUT = "joined_results.csv"
 DEFAULT_RECALL_OUT = "flow_recall_summary.csv"
 
+# Flood-merge for FAMILY-level scoring
+FAMILY_MERGE = {"DDoS": "Flood", "DoS": "Flood", "Flood_uncertain": "Flood"}
+
 
 def load_jsonl(path):
     with open(path) as f:
@@ -16,7 +18,6 @@ def load_jsonl(path):
 
 
 def build_job_index(jobs):
-   
     by_flow = {}
     for job in jobs:
         flow_id = job.get("flow_id")
@@ -27,6 +28,10 @@ def build_job_index(jobs):
     return by_flow
 
 
+def _to_family(label):
+    return FAMILY_MERGE.get(label, label)
+
+
 def join(predictions_path=DEFAULT_PROVENANCE, ground_truth_path=DEFAULT_GROUND_TRUTH,
          out_csv=DEFAULT_OUT, recall_out=DEFAULT_RECALL_OUT):
     predictions = load_jsonl(predictions_path)
@@ -34,7 +39,8 @@ def join(predictions_path=DEFAULT_PROVENANCE, ground_truth_path=DEFAULT_GROUND_T
     job_by_flow = build_job_index(jobs)
 
     fieldnames = ["replay_id", "pcap_path", "expected_label", "predicted_label",
-                  "correct", "confidence", "model_used", "packet_count",
+                  "correct", "family_expected", "family_predicted", "family_correct",
+                  "confidence", "model_used", "packet_count",
                   "packet_ids", "mixed_flow", "captured_ts"]
     rows = []
     unmatched = 0
@@ -48,7 +54,6 @@ def join(predictions_path=DEFAULT_PROVENANCE, ground_truth_path=DEFAULT_GROUND_T
 
         job = job_by_flow.get(flow_id) if flow_id is not None else None
         if job is None:
-         
             unmatched += 1
             continue
 
@@ -57,12 +62,18 @@ def join(predictions_path=DEFAULT_PROVENANCE, ground_truth_path=DEFAULT_GROUND_T
 
         expected = job["expected_label"]
         predicted = pred["predicted_label"]
+        family_expected = _to_family(expected)
+        family_predicted = _to_family(predicted)
+
         rows.append({
             "replay_id": job["replay_id"],
             "pcap_path": job["pcap_path"],
             "expected_label": expected,
             "predicted_label": predicted,
             "correct": (expected.lower() == predicted.lower()),
+            "family_expected": family_expected,
+            "family_predicted": family_predicted,
+            "family_correct": (family_expected.lower() == family_predicted.lower()),
             "confidence": pred["confidence"],
             "model_used": pred["model_used"],
             "packet_count": pred["packet_count"],
@@ -77,7 +88,6 @@ def join(predictions_path=DEFAULT_PROVENANCE, ground_truth_path=DEFAULT_GROUND_T
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
-
 
     recall_fieldnames = ["replay_id", "pcap_path", "packets_read", "packets_received", "recall_pct"]
     recall_rows = []
@@ -98,21 +108,57 @@ def join(predictions_path=DEFAULT_PROVENANCE, ground_truth_path=DEFAULT_GROUND_T
         writer.writeheader()
         writer.writerows(recall_rows)
 
-    correct_n = sum(1 for r in rows if r["correct"])
     print(f"Joined {len(rows)} windows to a replay job by flow_id "
           f"({unmatched} unmatched) -> {out_csv}")
-    if rows:
-        print(f"  Window-level accuracy: {correct_n}/{len(rows)} "
-              f"({100.0 * correct_n / len(rows):.1f}%)")
     print(f"  {mixed} window(s) straddled more than one flow_id -- their "
           f"expected_label is genuinely ambiguous, not a join error.")
     print(f"Per-flow packet recall -> {recall_out}")
     if unmatched > 0.1 * (len(rows) + unmatched):
         print("  [WARN] >10% unmatched — check that truth_log.jsonl entries carry "
-              "a flow_id field (requires the updated traffic_generator.py) and "
-              "that provenance_log.jsonl exists at the expected path (requires "
-              "the updated capture.py).")
+              "a flow_id field and that provenance_log.jsonl exists at the expected path.")
+
+    _print_accuracy_breakdown(rows)
     return rows, recall_rows
+
+
+def _print_accuracy_breakdown(rows):
+    if not rows:
+        return
+    n = len(rows)
+
+    def pct(numer, denom):
+        return f"{100.0 * numer / denom:.1f}% ({numer}/{denom})" if denom else "n/a (0 rows)"
+
+    # 1. Strict, exact-label accuracy (no merging at all) — the number as it
+    #    always was, kept for continuity with every prior run's reporting.
+    strict_correct = sum(1 for r in rows if r["correct"])
+
+    # 2. Attack vs Benign — the stage-1 question in isolation.
+    binary_correct = sum(
+        1 for r in rows
+        if (r["expected_label"].lower() != "benign") == (r["predicted_label"].lower() != "benign")
+    )
+
+    # 3. Family-level accuracy, DDoS+DoS merged to Flood, Flood_uncertain
+   
+    family_correct = sum(1 for r in rows if r["family_correct"])
+
+    # 3b. Same family-level accuracy, restricted to rows expected to be an
+ 
+    attack_rows = [r for r in rows if r["expected_label"].lower() != "benign"]
+    family_attack_correct = sum(1 for r in attack_rows if r["family_correct"])
+
+    # 4. DDoS-vs-DoS specifically: stage 3's own question in isolation,
+   
+    flood_rows = [r for r in rows if r["expected_label"].lower() in ("ddos", "dos")]
+    flood_correct = sum(1 for r in flood_rows if r["correct"])
+
+    print("\n Accuracy breakdown ")
+    print(f"  Strict (exact label match, no merging):        {pct(strict_correct, n)}")
+    print(f"  Attack vs Benign (stage 1 in isolation):        {pct(binary_correct, n)}")
+    print(f"  6-family, DDoS+DoS merged to Flood (all rows):  {pct(family_correct, n)}")
+    print(f"  6-family, attack rows only:                     {pct(family_attack_correct, len(attack_rows))}")
+    print(f"  DDoS vs DoS specifically (stage 3 in isolation): {pct(flood_correct, len(flood_rows))}")
 
 
 if __name__ == "__main__":

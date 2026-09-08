@@ -10,10 +10,8 @@ import hashlib
 from pathlib import Path
 from scapy.layers.inet import fragment
 
-from scapy.all import RawPcapReader, Ether, IP, IPv6, L3RawSocket, TCP, UDP
-
+from scapy.all import RawPcapReader, Ether, IP, IPv6, L3RawSocket, TCP, UDP, ARP
 from pkt_debug import inspect_packet
-
 from build_envelope import build_envelope_chunks
 # pcap link-layer type codes we know how to decode.
 _LINKTYPE_DECODERS = {
@@ -78,11 +76,13 @@ def iter_packets(pcap_path):
 
     for raw_bytes, pkt_meta in reader:
         pkt = decoder(raw_bytes)
-        if IP not in pkt:
+        if os.getenv("PKT_INSPECT", "0") == "1":
+            inspect_packet(pkt, "replay_engine")
+        if IP not in pkt and ARP not in pkt:
             continue
         ts = pkt_meta.sec + pkt_meta.usec / 1e6
-        ip_bytes = bytes(pkt[IP])
-        yield ip_bytes, ts, linktype
+        frame_bytes = bytes(pkt)          # full decoded frame, not just the IP layer
+        yield frame_bytes, ts, linktype
 
 
 
@@ -192,20 +192,12 @@ def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, u
                             f"stopping mid-file at packet {total} (sent={sent})")
                 break
             total += 1
-            # if prev_ts is not None:
-            #     delay = (ts - prev_ts) / replay_speed
-                
-    
-            #     # if MAX_DELAY is not None and delay > MAX_DELAY:
-            #     #     delay = MAX_DELAY
-                
-            #     # #MAX_DELAY = 0.05      # 50 ms
-
-            #     # if delay > 0:
-
-            #     time.sleep(delay)
-            #     log.info(f"Delay = {delay:.3f}s")
-               
+            if prev_ts is not None:
+                delay = max(0.0, (ts - prev_ts) / replay_speed)  # non-monotonic ts -> 0, never negative sleep
+                if MAX_DELAY is not None:
+                    delay = min(delay, MAX_DELAY)
+                if delay > 0:
+                    time.sleep(delay)
             prev_ts = ts
 
             chunks = build_envelope_chunks(
@@ -217,8 +209,9 @@ def replay_pcap(pcap_path, replay_speed=1.0, target_ip=TARGET_IP, iface=IFACE, u
                 for chunk in chunks:
                     send_envelope_chunk(sock, ue_ip, target_ip, chunk)
                 sent += 1
-                log.info(f"REPLAY | {ue_ip} to {target_ip} | packet_id={packet_id} "
-                         f"({len(original_bytes)}B original, {len(chunks)} chunk(s))")
+                if sent % 500 == 0 or sent == 1:
+                    log.info(f"REPLAY | {ue_ip} to {target_ip} | packet_id={packet_id} "
+                             f"({len(original_bytes)}B original, {len(chunks)} chunk(s)) — {sent} sent so far")
             except OSError as e:
                 errors += 1
                 if errors <= 3 or errors % 50 == 0:
