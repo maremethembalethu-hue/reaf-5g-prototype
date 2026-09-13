@@ -63,11 +63,8 @@ services:
       - EVAL_DIR=/evaluation
       - EVIDENCE_DIR=/evidence
     volumes:
-      - eval-data:/evaluation:ro
-      - evidence-data:/evidence:ro
+      - ./evaluation:/evaluation:ro
+      - ./evidence:/evidence:ro
     depends_on:
       - 5g-edge-node
       - iot-traffic-generator
-volumes:
-  eval-data:
-  evidence-data:

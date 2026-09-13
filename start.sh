@@ -26,8 +26,8 @@ sleep 10
 # Step 4: Start UE
 echo "4/6 Starting UERANSIM UE..."
 docker compose -f nr-ue.yaml up -d
-echo "      Waiting 25 seconds for UE registration..."
-sleep 20
+echo "      Waiting 15 seconds for UE registration..."
+sleep 15
 
 #  replace the default route with uesimtun0 so ALL traffic goes through the 5G tunnel to the UPF
 echo "      nr_ue routing: replacing eth0 default with uesimtun0..."
@@ -53,6 +53,7 @@ echo "Removing old REAF containers..."
 
 docker rm -f reaf-traffic 2>/dev/null || true
 docker rm -f 5g-edge-node 2>/dev/null || true
+docker rm -f dashboard 2>/dev/null || true
 sleep 10
 
 # echo " Samples a fixed number of *complete* flows from a source PCAP... "
@@ -63,7 +64,7 @@ sleep 10
 echo "5/6 Building and starting Edge Node and Traffic Generator..."
 cd "$SCRIPT_DIR"
 export TARGET_IP="$UPF_GW"
-docker compose up -d --build 5g-edge-node iot-traffic-generator
+docker compose up -d --build 5g-edge-node iot-traffic-generator dashboard
 
 # reaf-traffic shares nr_ue network namespace but Docker resets the route on container start so  fix it here as well
 echo "      Waiting 5 seconds for traffic generator to initialise..."
