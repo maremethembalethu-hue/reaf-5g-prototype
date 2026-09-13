@@ -2,7 +2,8 @@ import os, json, csv, hashlib
 from datetime import datetime
 from collections import defaultdict
 from flask import Flask, jsonify, render_template
-
+from dash_results import compute_joined_rows, accuracy_breakdown
+ 
 app = Flask(__name__)
 
 EVAL_DIR = os.environ.get("EVAL_DIR", "/evaluation")
@@ -206,30 +207,29 @@ def _accuracy_breakdown(rows):
 @app.route("/api/accuracy")
 def accuracy():
     # This entire endpoint depends on joined_results.csv.
-    generated_at = None
-    if os.path.exists(JOINED_CSV):
-        generated_at = datetime.fromtimestamp(os.path.getmtime(JOINED_CSV)).strftime("%Y-%m-%d %H:%M:%S")
-
-    rows = load_csv(JOINED_CSV)
-    heavy = _accuracy_breakdown([r for r in rows if str(r.get("model_used", "")).startswith("heavy_")])
-    lite = _accuracy_breakdown([r for r in rows if str(r.get("model_used", "")).startswith("lite_")])
+    rows = compute_joined_rows(PREDICTIONS_LOG, TRUTH_LOG)
+    heavy = accuracy_breakdown([r for r in rows if r["model_used"].startswith("heavy_")])
+    lite = accuracy_breakdown([r for r in rows if r["model_used"].startswith("lite_")])
     labels = [("Strict (exact label match)", "strict"), ("Attack vs Benign", "binary"),
               ("6-Family (Flood merged)", "family"), ("DDoS vs DoS specific", "flood")]
     return jsonify({
-        "generated_at": generated_at,
+        "computed_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "n_windows_joined": len(rows),
         "rows": [{"level": label, "heavy": heavy[key], "lite": lite[key]} for label, key in labels],
     })
+ 
+ 
 
 
 #  per-attack breakdown
 
 @app.route("/api/per_attack")
 def per_attack():
-    rows = load_csv(JOINED_CSV)
+    rows = compute_joined_rows(PREDICTIONS_LOG, TRUTH_LOG)
     by_expected = defaultdict(list)
     for r in rows:
         by_expected[r["expected_label"]].append(r)
-
+ 
     out = []
     for attack, group in sorted(by_expected.items()):
         tp = sum(1 for r in group if r["predicted_label"].lower() == attack.lower())
@@ -244,7 +244,7 @@ def per_attack():
             "bundles": sum(1 for r in group if attack.lower() != "benign"),
         })
     return jsonify(out)
-
+ 
 
 #  override activity
 
@@ -278,32 +278,34 @@ def margins():
     for m in margins_list:
         idx = min(int(m / 0.05), len(buckets) - 1)
         counts[idx] += 1
-
-    joined_rows = load_csv(JOINED_CSV)
-    uncertain = sum(1 for r in joined_rows if r.get("predicted_label") == "Flood_uncertain")
+ 
+    joined_rows = compute_joined_rows(PREDICTIONS_LOG, TRUTH_LOG)
+    uncertain = sum(1 for r in joined_rows if r["predicted_label"] == "Flood_uncertain")
     return jsonify({"buckets": buckets, "counts": counts, "threshold": MIN_MARGIN, "uncertain": uncertain})
-
-
 #  experiment runs
 
 @app.route("/api/runs")
 def runs():
-    # Convention copy joined_results.csv into EVAL_DIR/runs/<run_id>/joined_results.csv after each evaluation
-    # to compare runs here. Falls back to treating the current single
-    # joined_results.csv as one run if that folder doesn't exist yet.
-    run_dirs = sorted(os.listdir(RUNS_DIR)) if os.path.isdir(RUNS_DIR) else []
-    sources = [(rid, os.path.join(RUNS_DIR, rid, "joined_results.csv")) for rid in run_dirs] or [("current", JOINED_CSV)]
-
+    # Historical runs 
     out = []
-    for run_id, path in sources:
-        rows = load_csv(path)
+    run_dirs = sorted(os.listdir(RUNS_DIR)) if os.path.isdir(RUNS_DIR) else []
+    for rid in run_dirs:
+        rows = load_csv(os.path.join(RUNS_DIR, rid, "joined_results.csv"))
         if not rows:
             continue
-        heavy = _accuracy_breakdown([r for r in rows if str(r.get("model_used", "")).startswith("heavy_")])
-        overrides_n = sum(1 for r in rows if "w100_override" in str(r.get("model_used", "")))
-        uncertain_n = sum(1 for r in rows if r.get("predicted_label") == "Flood_uncertain")
-        out.append({"id": run_id, "date": None, "model": "Heavy", "strict": heavy["strict"],
-                     "binary": heavy["binary"], "overrides": overrides_n, "uncertain": uncertain_n})
+        heavy = accuracy_breakdown([r for r in rows if str(r.get("model_used", "")).startswith("heavy_")])
+        out.append({"id": rid, "date": None, "model": "Heavy", "strict": heavy["strict"],
+                     "binary": heavy["binary"],
+                     "overrides": sum(1 for r in rows if "w100_override" in str(r.get("model_used", ""))),
+                     "uncertain": sum(1 for r in rows if r.get("predicted_label") == "Flood_uncertain")})
+ 
+    live_rows = compute_joined_rows(PREDICTIONS_LOG, TRUTH_LOG)
+    if live_rows:
+        heavy = accuracy_breakdown([r for r in live_rows if r["model_used"].startswith("heavy_")])
+        out.append({"id": "current (live)", "date": None, "model": "Heavy", "strict": heavy["strict"],
+                     "binary": heavy["binary"],
+                     "overrides": sum(1 for r in live_rows if "w100_override" in r["model_used"]),
+                     "uncertain": sum(1 for r in live_rows if r["predicted_label"] == "Flood_uncertain")})
     return jsonify(out)
 
 
