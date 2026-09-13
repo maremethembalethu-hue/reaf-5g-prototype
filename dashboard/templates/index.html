@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REAF-5G Forensic Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="blob"></span>
+    <div>
+      <h1>REAF-5G Forensic Dashboard</h1>
+      <p>Live 5G edge node · ISO/IEC 27043 aligned · auto-refresh 10s</p>
+    </div>
+  </div>
+  <div class="pulse" id="pulse">● LIVE</div>
+</header>
+
+<main class="grid">
+
+  <section class="card wide" id="panel-stats">
+    <h2> System Stats</h2>
+    <div class="stat-row" id="stat-bars"></div>
+    <div class="stat-list" id="stat-list"></div>
+  </section>
+
+  <section class="card wide" id="panel-live">
+    <h2> Live Packet Replay</h2>
+    <p class="sub">Watching the wire in real time</p>
+    <div class="live-strip" id="live-strip"></div>
+  </section>
+
+  <section class="card tall" id="panel-feed">
+    <h2> Detection Feed</h2>
+    <div class="table-wrap"><table id="feed-table">
+      <thead><tr><th>Time</th><th>Src</th><th>Attack</th><th>Conf</th><th>Window</th><th>Override</th><th>Model</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="card" id="panel-timeline">
+    <h2> Resource & Model Tier</h2>
+    <canvas id="chart-timeline" height="180"></canvas>
+  </section>
+
+  <section class="card" id="panel-custody">
+    <h2> Chain of Custody</h2>
+    <div class="custody-status" id="custody-status"></div>
+    <div class="chain-list" id="chain-list"></div>
+  </section>
+
+  <section class="card" id="panel-accuracy">
+    <h2> Four-Level Accuracy</h2>
+    <div class="table-wrap"><table id="accuracy-table">
+      <thead><tr><th>Level</th><th>Heavy</th><th>Lite</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="card wide" id="panel-per-attack">
+    <h2> Per-Attack-Type Breakdown</h2>
+    <div class="table-wrap"><table id="per-attack-table">
+      <thead><tr><th>Attack</th><th>Precision</th><th>Recall</th><th>F1</th><th>Count</th><th>Bundles</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="card wide" id="panel-overrides">
+    <h2> Dual-Window Override Activity</h2>
+    <div class="badge-row" id="override-summary"></div>
+    <div class="table-wrap"><table id="override-table">
+      <thead><tr><th>Time</th><th>Flow</th><th>Before</th><th>After</th><th>Conf</th><th>Changed?</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="card" id="panel-margins">
+    <h2> DDoS vs DoS Margin</h2>
+    <canvas id="chart-margins" height="180"></canvas>
+    <p class="sub" id="margin-note"></p>
+  </section>
+
+  <section class="card" id="panel-runs">
+    <h2> Experiment Runs</h2>
+    <div class="table-wrap"><table id="runs-table">
+      <thead><tr><th>Run</th><th>Model</th><th>Strict</th><th>Binary</th><th>OV</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+</main>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
