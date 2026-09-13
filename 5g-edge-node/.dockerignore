@@ -20,3 +20,10 @@ venv/
 # Large project directories
 evidence/
 models/
+trained_models/outputs
+trained_models/three_random_forest
+trained_models/three_stage
+trained_models/three_stage_model
+trained_models/variation
+trained_models/variation2
+trained_models/three_floods

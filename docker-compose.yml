@@ -2,8 +2,6 @@ services:
  
   #  5G EDGE NODE
   #  Runs inside the UPF network namespace so it can see ogstun traffic.
- 
-  
   5g-edge-node:
     build: ./5g-edge-node
     container_name: 5g-edge-node
@@ -56,3 +54,20 @@ services:
       - MAX_RUNTIME_SECONDS=1200
       - PCAP_PATH=pre-selected/replay_pcaps_contiguous/Benign_Final/BenignTraffic_contiguous_sample.pcap
     restart: "no"
+
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8080:8080"
+    environment:
+      - EVAL_DIR=/evaluation
+      - EVIDENCE_DIR=/evidence
+    volumes:
+      - eval-data:/evaluation:ro
+      - evidence-data:/evidence:ro
+    depends_on:
+      - 5g-edge-node
+      - iot-traffic-generator
+volumes:
+  eval-data:
+  evidence-data:
