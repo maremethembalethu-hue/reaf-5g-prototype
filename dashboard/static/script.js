@@ -65,9 +65,9 @@ async function loadTimeline(){
 async function loadCustody(){
   const c = await get('/api/custody');
   document.getElementById('custody-status').innerHTML =
-    `${c.intact ? 'R' : 'W'} ${c.total} entries verified · ${c.broken} broken links`;
+    `${c.intact ? '#006400' : '#ff0000'} ${c.total} entries verified · ${c.broken} broken links`;
   document.getElementById('chain-list').innerHTML = c.entries.slice(-12).map(e =>
-    `<div class="chain-row"><span>#${e.id} ${e.hash}</span><span>R</span></div>`).join('');
+    `<div class="chain-row"><span>#${e.id} ${e.hash}</span><span style="color: #006400;">0</span></div>`).join('');
 }
 
 async function loadAccuracy(){
@@ -75,7 +75,9 @@ async function loadAccuracy(){
   document.querySelector('#accuracy-table tbody').innerHTML = d.rows.map(r =>
     `<tr><td>${r.level}</td><td>${r.heavy ?? '-'}%</td><td>${r.lite ?? '-'}%</td></tr>`).join('');
   document.getElementById('accuracy-generated').textContent =
-    d.generated_at ? `Snapshot from last true_results.py run: ${d.generated_at}` : 'No results generated yet — run true_results.py';
+    d.n_windows_joined > 0
+      ? `Live computed at ${d.computed_at} from ${d.n_windows_joined} joined windows so far`
+      : 'No windows joined yet';
 }
 
 async function loadCurrentReplay(){
@@ -122,6 +124,6 @@ function refreshAll(){
 }
 
 refreshAll();
-setInterval(refreshAll, 10000);
+setInterval(refreshAll, 5000);
 setInterval(loadLive, 2500);
 setInterval(loadCurrentReplay, 2500);

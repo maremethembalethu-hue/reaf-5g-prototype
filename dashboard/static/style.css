@@ -3,7 +3,7 @@
   --card:#ffffff;
   --ink:#2b2640;
   --sub:#8a84a8;
-  --purple:#7c6cf0;
+  --green:#3a4e3b;
   --mint:#33c98f;
   --coral:#ff6f6f;
   --amber:#ffb44d;
@@ -24,7 +24,7 @@ h1,h2{font-family:'Baloo 2',sans-serif;margin:0;}
   justify-content:space-between;
   align-items:center;
   padding:20px 32px;
-  background:linear-gradient(135deg,var(--purple),#a68cff);
+  background:linear-gradient(135deg,var(--green),#5d7d5e);
   color:white;
   border-radius:0 0 30px 30px;
 }
@@ -59,9 +59,17 @@ h1,h2{font-family:'Baloo 2',sans-serif;margin:0;}
 .card.wide{grid-column:span 3;}
 .card.tall{grid-column:span 2;grid-row:span 2;}
 .card h2{font-size:18px;margin-bottom:6px;}
-.sub{color:var(--sub);font-size:13px;margin:0 0 12px;}
+.sub{
+  color:var(--sub);
+  font-size:13px;
+  margin:0 0 12px;
+}
 
-table{width:100%;border-collapse:collapse;font-size:13px;}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
 th{
   text-align:left;
   color:var(--sub);
@@ -69,10 +77,20 @@ th{
   padding:6px 8px;
   border-bottom:2px solid var(--bg);
 }
-td{padding:8px;border-bottom:1px solid var(--bg);}
-.table-wrap{max-height:320px;overflow-y:auto;}
+td{
+  padding:8px;
+  border-bottom:1px solid var(--bg);
+}
+.table-wrap{
+  max-height:320px;
+  overflow-y:auto;
+}
 
-.stat-row{display:flex;gap:16px;margin-bottom:12px;}
+.stat-row{
+  display:flex;
+  gap:16px;
+  margin-bottom:12px;
+}
 .bar-pill{
   flex:1;
   background:var(--bg);

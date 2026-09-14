@@ -1,8 +1,10 @@
-import os, json, csv, hashlib
+import time
+import os, json, csv
 from datetime import datetime
-from collections import defaultdict
+from collections import defaultdict, deque
 from flask import Flask, jsonify, render_template
 from dash_results import compute_joined_rows, accuracy_breakdown
+from monitor_tier import get_metrics, get_model_tier
  
 app = Flask(__name__)
 
@@ -11,14 +13,14 @@ EVIDENCE_DIR = os.environ.get("EVIDENCE_DIR", "/evidence")
 
 PREDICTIONS_LOG = os.path.join(EVAL_DIR, "predictions_log.jsonl")
 DEBUG_LOG = os.path.join(EVAL_DIR, "debug_predictions.jsonl")
-JOINED_CSV = os.path.join(EVAL_DIR, "joined_results.csv")
 TRUTH_LOG = os.path.join(EVAL_DIR, "truth_log.jsonl")
+PROVENANCE_LOG = os.path.join(EVAL_DIR, "items_log.jsonl")
 CUSTODY_LOG = os.path.join(EVIDENCE_DIR, "chain_of_custody.log")
 RUNS_DIR = os.path.join(EVAL_DIR, "runs")   # optional convention, see /api/runs
 
 MIN_MARGIN = 0.20  # matches model_engine.py's stage-3 confidence gate
 
-
+resource_history = deque(maxlen=40)
 #  helpers
 
 def load_jsonl(path, limit=None):
@@ -104,7 +106,7 @@ def stats():
         cpu, ram = None, None
         tier = None  # can't know the edge node's real tier without its own log
 
-    items = load_jsonl(PREDICTIONS_LOG)
+    items = load_jsonl(PROVENANCE_LOG)
     attack_events = [r for r in items if r.get("predicted_label") not in (None, "Benign", "InsufficientData", "ModelUnavailable")]
     last = items[-1] if items else None
 
@@ -136,13 +138,13 @@ def _row_from_item(r):
 
 @app.route("/api/feed")
 def feed():
-    items = load_jsonl(PREDICTIONS_LOG, limit=25)
+    items = load_jsonl(PROVENANCE_LOG, limit=25)
     return jsonify([_row_from_item(r) for r in reversed(items)])
 
 
 @app.route("/api/live")
 def live():
-    items = load_jsonl(PREDICTIONS_LOG, limit=1)
+    items = load_jsonl(PROVENANCE_LOG, limit=1)
     if not items:
         return jsonify({"time": fmt_time(None), "flow_id": None, "size": None,
                          "attack": "no data yet", "confidence": None, "flagged": False})
@@ -186,28 +188,10 @@ def custody():
 FAMILY_MERGE = {"DDoS": "Flood", "DoS": "Flood", "Flood_uncertain": "Flood"}
 
 
-def _accuracy_breakdown(rows):
-    if not rows:
-        return {"strict": None, "binary": None, "family": None, "flood": None}
-    n = len(rows)
-    strict = sum(1 for r in rows if r["expected_label"].lower() == r["predicted_label"].lower())
-    binary = sum(1 for r in rows if (r["expected_label"].lower() != "benign") == (r["predicted_label"].lower() != "benign"))
-    fam_correct = sum(1 for r in rows
-                       if FAMILY_MERGE.get(r["expected_label"], r["expected_label"]).lower()
-                       == FAMILY_MERGE.get(r["predicted_label"], r["predicted_label"]).lower())
-    flood_rows = [r for r in rows if r["expected_label"].lower() in ("ddos", "dos")]
-    flood = (sum(1 for r in flood_rows if r["expected_label"].lower() == r["predicted_label"].lower())
-             / len(flood_rows) * 100) if flood_rows else None
-    return {
-        "strict": round(100 * strict / n, 1), "binary": round(100 * binary / n, 1),
-        "family": round(100 * fam_correct / n, 1), "flood": flood,
-    }
-
-
 @app.route("/api/accuracy")
 def accuracy():
     # This entire endpoint depends on joined_results.csv.
-    rows = compute_joined_rows(PREDICTIONS_LOG, TRUTH_LOG)
+    rows = compute_joined_rows(PROVENANCE_LOG, TRUTH_LOG)
     heavy = accuracy_breakdown([r for r in rows if r["model_used"].startswith("heavy_")])
     lite = accuracy_breakdown([r for r in rows if r["model_used"].startswith("lite_")])
     labels = [("Strict (exact label match)", "strict"), ("Attack vs Benign", "binary"),
@@ -219,13 +203,33 @@ def accuracy():
     })
  
  
+@app.route("/api/timeline")
+def timeline():
+    metrics = get_metrics()
+    tier = get_model_tier()
 
+    resource_history.append({
+        "time": time.time(),
+        "cpu": metrics["cpu_percent"],
+        "ram": metrics["ram_percent"],
+        "model": tier_for(tier)
+    })
+
+    return jsonify([
+        {
+            "time": fmt_time(r["time"]),
+            "cpu": r["cpu"],
+            "ram": r["ram"],
+            "model": r["model"]
+        }
+        for r in resource_history
+    ])
 
 #  per-attack breakdown
 
 @app.route("/api/per_attack")
 def per_attack():
-    rows = compute_joined_rows(PREDICTIONS_LOG, TRUTH_LOG)
+    rows = compute_joined_rows(PROVENANCE_LOG, TRUTH_LOG)
     by_expected = defaultdict(list)
     for r in rows:
         by_expected[r["expected_label"]].append(r)
@@ -250,7 +254,7 @@ def per_attack():
 
 @app.route("/api/overrides")
 def overrides():
-    items = load_jsonl(PREDICTIONS_LOG)
+    items = load_jsonl(PROVENANCE_LOG)
     rows = []
     for r in items:
         if "w100_override" not in str(r.get("model_used", "")):
@@ -279,7 +283,7 @@ def margins():
         idx = min(int(m / 0.05), len(buckets) - 1)
         counts[idx] += 1
  
-    joined_rows = compute_joined_rows(PREDICTIONS_LOG, TRUTH_LOG)
+    joined_rows = compute_joined_rows(PROVENANCE_LOG, TRUTH_LOG)
     uncertain = sum(1 for r in joined_rows if r["predicted_label"] == "Flood_uncertain")
     return jsonify({"buckets": buckets, "counts": counts, "threshold": MIN_MARGIN, "uncertain": uncertain})
 #  experiment runs
@@ -299,7 +303,7 @@ def runs():
                      "overrides": sum(1 for r in rows if "w100_override" in str(r.get("model_used", ""))),
                      "uncertain": sum(1 for r in rows if r.get("predicted_label") == "Flood_uncertain")})
  
-    live_rows = compute_joined_rows(PREDICTIONS_LOG, TRUTH_LOG)
+    live_rows = compute_joined_rows(PROVENANCE_LOG, TRUTH_LOG)
     if live_rows:
         heavy = accuracy_breakdown([r for r in live_rows if r["model_used"].startswith("heavy_")])
         out.append({"id": "current (live)", "date": None, "model": "Heavy", "strict": heavy["strict"],
