@@ -1,0 +1,109 @@
+{
+  "jobs": [
+    {
+      "replay_id": 1,
+      "pcap_path": "pre-selected/replay_pcaps_contiguous/Benign_Final/BenignTraffic_contiguous_sample.pcap",
+      "expected_label": "Benign_Final",
+      "num_packets": 5000,
+      "recommended_replay_params": {
+        "suggested_idle_timeout": 0.5,
+        "suggested_replay_speed": 1.0,
+        "suggested_max_delay": 0.15000000000000002,
+        "basis_gap_percentile": 99.0,
+        "basis_gap_percentile_value": 0.0892,
+        "max_gap_seconds": 5050.6533,
+        "negative_gap_count": 0
+      }
+    },
+    {
+      "replay_id": 2,
+      "pcap_path": "pre-selected/replay_pcaps_contiguous/DDoS-ICMP_Flood/DDoS-ICMP_Flood_contiguous_sample.pcap",
+      "expected_label": "DDoS-ICMP_Flood",
+      "num_packets": 5000,
+      "recommended_replay_params": {
+        "suggested_idle_timeout": 0.5,
+        "suggested_replay_speed": 1.0,
+        "suggested_max_delay": 0.05,
+        "basis_gap_percentile": 99.0,
+        "basis_gap_percentile_value": 0.001,
+        "max_gap_seconds": 33.5565,
+        "negative_gap_count": 0
+      }
+    },
+    {
+      "replay_id": 3,
+      "pcap_path": "pre-selected/replay_pcaps_contiguous/DDoS-TCP_Flood/DDoS-TCP_Flood_contiguous_sample.pcap",
+      "expected_label": "DDoS-TCP_Flood",
+      "num_packets": 5000,
+      "recommended_replay_params": {
+        "suggested_idle_timeout": 0.5,
+        "suggested_replay_speed": 1.0,
+        "suggested_max_delay": 0.05,
+        "basis_gap_percentile": 99.0,
+        "basis_gap_percentile_value": 0.0011,
+        "max_gap_seconds": 39.3895,
+        "negative_gap_count": 0
+      }
+    },
+    {
+      "replay_id": 4,
+      "pcap_path": "pre-selected/replay_pcaps_contiguous/DDoS-UDP_Flood/DDoS-UDP_Flood_contiguous_sample.pcap",
+      "expected_label": "DDoS-UDP_Flood",
+      "num_packets": 5000,
+      "recommended_replay_params": {
+        "suggested_idle_timeout": 0.5,
+        "suggested_replay_speed": 1.0,
+        "suggested_max_delay": 0.05,
+        "basis_gap_percentile": 99.0,
+        "basis_gap_percentile_value": 0.0008,
+        "max_gap_seconds": 36.8449,
+        "negative_gap_count": 0
+      }
+    },
+    {
+      "replay_id": 5,
+      "pcap_path": "pre-selected/replay_pcaps_contiguous/Mirai-greip_flood/Mirai-greip_flood_contiguous_sample.pcap",
+      "expected_label": "Mirai-greip_flood",
+      "num_packets": 5000,
+      "recommended_replay_params": {
+        "suggested_idle_timeout": 0.5,
+        "suggested_replay_speed": 1.0,
+        "suggested_max_delay": 0.05,
+        "basis_gap_percentile": 99.0,
+        "basis_gap_percentile_value": 0.0245,
+        "max_gap_seconds": 6821.8183,
+        "negative_gap_count": 0
+      }
+    },
+    {
+      "replay_id": 6,
+      "pcap_path": "pre-selected/replay_pcaps_contiguous/Mirai-udpplain/Mirai-udpplain_contiguous_sample.pcap",
+      "expected_label": "Mirai-udpplain",
+      "num_packets": 5000,
+      "recommended_replay_params": {
+        "suggested_idle_timeout": 0.5,
+        "suggested_replay_speed": 1.0,
+        "suggested_max_delay": 0.05,
+        "basis_gap_percentile": 99.0,
+        "basis_gap_percentile_value": 0.0049,
+        "max_gap_seconds": 346.5453,
+        "negative_gap_count": 0
+      }
+    },
+    {
+      "replay_id": 7,
+      "pcap_path": "pre-selected/replay_pcaps_contiguous/Recon-PortScan/Recon-PortScan_contiguous_sample.pcap",
+      "expected_label": "Recon-PortScan",
+      "num_packets": 5000,
+      "recommended_replay_params": {
+        "suggested_idle_timeout": 0.5,
+        "suggested_replay_speed": 1.0,
+        "suggested_max_delay": 0.15000000000000002,
+        "basis_gap_percentile": 99.0,
+        "basis_gap_percentile_value": 0.1065,
+        "max_gap_seconds": 73768.0092,
+        "negative_gap_count": 0
+      }
+    }
+  ]
+}

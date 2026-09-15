@@ -68,7 +68,7 @@ reaf-5g-prototype/
 
 ## The dataset and models, briefly
 
-- Trained on **CICIoT2023** (39-feature official schema — see `docs/feature-schema-selection.md` for why the 46-feature alternative was tested and rejected: its extraction code doesn't reliably reproduce a live pipeline's requirements, even though it scores higher offline).
+- Trained on **CICIoT2023** (39-feature official schema see `docs/` for why the 46-feature alternative was tested and rejected: its extraction code doesn't reliably reproduce a live pipeline's requirements, even though it scores higher offline).
 - Official source: https://www.unb.ca/cic/datasets/iotdataset-2023.html
 - **3-stage architecture**: Stage 1 (Benign vs Attack) to Stage 2 (6-way family: BruteForce, Flood, Mirai, Recon, Spoofing, Web) to Stage 3 (DDoS vs DoS, only on rows Stage 2 calls Flood).
 - **Dual-window live classification**: the official dataset windows DDoS/DoS/Mirai traffic at 100 packets and everything else at 10, the live pipeline runs both window sizes in parallel and reconciles them (see `model_engine.py`). This was the single biggest fix to live-vs-training accuracy divergence during development.
@@ -118,38 +118,51 @@ cp outputs/*/*.onnx outputs/*/*.pkl outputs/*/feature_lists.json ../5g-edge-node
 
 ---
 
-## Running the full system (with dashboard)
+## Running a live test
 
 ```bash
-./start.sh
+sudo ./start.sh
 ```
 
 This brings up, in order: IP forwarding to Open5GS core to UERANSIM gNB to UERANSIM UE (with routing fixed so all UE traffic goes through the tunnel) to the edge node, traffic generator, and dashboard together to waits for the dashboard to actually respond to opens it in your browser automatically at `http://localhost:8080`.
 
-If the dashboard doesn't open automatically (e.g. no display / running over SSH), the script prints the URL instead of failing.
 
-Watch it working directly via:
+Watch it working directly via on another terminal but same directory of the prototype:
 ```bash
 docker logs -f 5g-edge-node
 docker logs -f reaf-traffic
 docker logs -f dashboard
 ```
+Watch `docker logs -f reaf-traffic` for `"All N replay jobs complete"`,
+then `docker compose stop iot-traffic-generator` — it has `restart:
+unless-stopped`, so left alone it will start the whole manifest over again.
 
+```bash
+sudo ./end.sh
+```
+Tears down the traffic generator, edge node, UE, gNB, and core, in that
+order.
 ---
 
-## Running WITHOUT the dashboard
+### Automatic post-run evaluation
+ 
+`start.sh` doesn't exit once the dashboard opens it stays running and calls `docker wait reaf-traffic`, which blocks until the traffic generator's replay job actually finishes, this can take anywhere from seconds to a long time depending on manifest size; the dashboard is already live and usable during that wait. Once the replay exits, it automatically runs, in order:
+ 
+```bash
+python3 evaluation/true_results.py               # joins items_log.jsonl + truth_log.jsonl -> joined_results.csv
+python3 evaluation/forensic_validation.py       # verifies the evidence hash chain
+```
+ 
+So a full `./start.sh` run ends with both a fresh `joined_results.csv` and a chain-of-custody verification already done, with no separate manual step needed see **Getting results without the dashboard** below for running either of these on demand instead.
+ 
+---
+
+### Running WITHOUT the dashboard
 
 The dashboard is a presentation layer only, every piece of actual research evidence (`evidence/`, `evaluation/items_log.jsonl`, `evaluation/truth_log.jsonl`, the chain-of-custody log) is written by the edge node and traffic generator regardless of whether the dashboard container exists at all.
 
-**To skip it entirely**, just don't include it in the compose command:
 
-```bash
-docker compose up -d --build 5g-edge-node iot-traffic-generator
-```
-
-(everything else, Open5GS, UERANSIM, still needs to come up first, same as in `start.sh`; only the last step differs)
-
-### Getting results without the dashboard
+#### Getting results without the dashboard
 
 Two options, both read the same live files the dashboard would:
 
@@ -160,18 +173,7 @@ python3 true_results.py
 ```
 This joins `items_log.jsonl` against `truth_log.jsonl`, writes `joined_results.csv` and `flow_recall_summary.csv`, and prints a four-level accuracy breakdown (strict, attack-vs-benign, 6-family, DDoS-vs-DoS) straight to the terminal. Re-run it any time, during a replay or after to get an updated snapshot.
 
-**Option B: plain-text live numbers, no file output**, useful for quick checks mid-run:
-```bash
-cd evaluation/
-python3 -c "
-from results_engine import compute_joined_rows, accuracy_breakdown
-rows = compute_joined_rows('items_log.jsonl', 'truth_log.jsonl')
-print(len(rows), 'windows joined')
-print(accuracy_breakdown(rows))
-"
-```
-
-Both approaches are correct and give the same numbers, the dashboard just automates option B on a 10-second refresh instead of you running it by hand.
+Both approaches are correct and give the same numbers, the dashboard just automates on a 10-second refresh instead of you running it by hand.
 
 ### A note on file naming
 

@@ -1,0 +1,61 @@
+{
+  "heavy_features": [
+    "Header_Length",
+    "Protocol Type",
+    "fin_flag_number",
+    "syn_flag_number",
+    "rst_flag_number",
+    "psh_flag_number",
+    "ack_flag_number",
+    "cwr_flag_number",
+    "ack_count",
+    "HTTP",
+    "HTTPS",
+    "IAT",
+    "SSH",
+    "IRC",
+    "TCP",
+    "UDP",
+    "ICMP",
+    "Tot sum",
+    "Min",
+    "Max",
+    "AVG",
+    "Number",
+    "Variance"
+  ],
+  "lite_features": [
+    "Tot size",
+    "Protocol Type",
+    "fin_flag_number",
+    "syn_flag_number",
+    "Header_Length",
+    "UDP",
+    "Min",
+    "Max",
+    "AVG",
+    "Number",
+    "Std",
+    "TCP"
+  ],
+  "stage2_classes": [
+    "BruteForce",
+    "Flood",
+    "Mirai",
+    "Recon",
+    "Spoofing",
+    "Web"
+  ],
+  "stage3_classes": [
+    "DDoS",
+    "DoS"
+  ],
+  "onnx_files": {
+    "heavy_stage1": "heavy_stage1_xgboost.onnx",
+    "lite_stage1": "lite_stage1_decision_tree.onnx",
+    "heavy_stage2": "heavy_stage2_xgboost.onnx",
+    "lite_stage2": "lite_stage2_decision_tree.onnx",
+    "heavy_stage3": "heavy_stage3_xgboost.onnx",
+    "lite_stage3": "lite_stage3_decision_tree.onnx"
+  }
+}

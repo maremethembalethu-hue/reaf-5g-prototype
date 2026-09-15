@@ -208,9 +208,7 @@ def encode_protocol_type(raw_value, proto_encoder, log=None):
 def _scale_window(window, tier):
     # Shared by both the w=10 and w=100 paths: encode protocol, vectorize,
     # scale. Both window sizes use the SAME feature list and SAME scaler —
-    # the scaler was fit on training data that already mixes w=10 and w=100
-    # rows (that's just how the classes were originally captured), so it's
-    # already correctly calibrated for either scale without any change.
+    # the scaler was fit on training data
     base_features = dict(compute_base_features(window))
     if _proto_encoder is not None:
         base_features["Protocol Type"] = encode_protocol_type(
@@ -245,9 +243,7 @@ def _run_stage2_stage3(sessions, scaled):
         stage3_conf = float(p3[stage3_idx])
         debug["stage3"] = {
             "margin": margin, "confident": bool(margin >= MIN_MARGIN),
-            "predicted_label": stage3_label,  # was missing — couldn't tell DDoS from DoS
-                                                # in past debug dumps, only whether the call
-                                                # was "confident" or not
+            "predicted_label": stage3_label,  # was missing 
             "P(DDoS)": ddos_proba, "P(DoS)": dos_proba,
         }
  
@@ -255,10 +251,7 @@ def _run_stage2_stage3(sessions, scaled):
  
  
 def register_w100_result(window_100, position):
-    # w=100 windows never gate on their own — they only ever EXIST to
-    # override the w=10 stage2 answer for Flood/Mirai (see model_engine.
-    # register_w100_result). Still logged/acted on like a normal detection
-    # event so it's auditable, tagged distinctly via model_used.
+    # w=100 windows never gate on their own 
     tier = get_model_tier()
     metrics = get_metrics()
     sessions = _sessions.get(tier)
@@ -287,11 +280,7 @@ def register_w100_result(window_100, position):
                 "stage3_label": stage3_label, "stage3_confidence": stage3_conf,
                 "valid_upto_position": position,
                 "flow_id": window_100.get("flow_id"),  # scopes the override to THIS replay
-                                                         # job only — position alone isn't
-                                                         # enough, since it never resets
-                                                         # between different jobs and a stale
-                                                         # override could otherwise bleed into
-                                                         # the start of the next, unrelated job.
+                                            
             }
             attack_type = stage3_label if family == "Flood" else family
             confidence = stage3_conf if family == "Flood" else family_conf

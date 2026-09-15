@@ -12,7 +12,7 @@ SOURCE_ROOT = "./pcaps"
 CONTIGUOUS_OUT_DIR_PCAP = "pre-selected/replay_pcaps_contiguous"
 CONTIGUOUS_MANIFEST_PATH = "pre-selected/manifest_contiguous.json"
 
-CONTIGUOUS_TARGET_PACKETS = 20000
+CONTIGUOUS_TARGET_PACKETS = 5000
 CONTIGUOUS_NUM_BLOCKS = 5
 
 TARGET_IDLE_TIMEOUT_DEFAULT = 2.0
@@ -84,11 +84,23 @@ def recommend_replay_params(gaps_sorted, target_idle_timeout=TARGET_IDLE_TIMEOUT
 def sample_pcap_contiguous(source_pcap, expected_label, out_dir, target_packets=CONTIGUOUS_TARGET_PACKETS,
                             num_blocks=CONTIGUOUS_NUM_BLOCKS, max_packets=2_000_000, random_state=RANDOM_STATE,
                             target_idle_timeout=TARGET_IDLE_TIMEOUT_DEFAULT, gap_percentile=GAP_PERCENTILE_DEFAULT,
-                            safety_margin=SAFETY_MARGIN_DEFAULT):
+                            safety_margin=SAFETY_MARGIN_DEFAULT, max_block_packets=1000):
     # Several contiguous blocks spread across the file, not one slice that
     # could land on an unrepresentative burst. block_size is forced to a
     # multiple of WINDOW_SIZE so a block boundary never splits a live window
     # across two unrelated parts of the source capture.
+    #
+    # block_size is additionally CAPPED at max_block_packets, growing the
+    # number of blocks instead of their size once target_packets gets large.
+    # A larger single block dwelling longer in one part of the file is more
+    # likely to land entirely inside a degenerate, repetitive stretch (e.g.
+    # a burst of near-duplicate, same-timestamp packets) — confirmed
+    # directly: at target_packets=20,000 (block_size=4,000), Benign accuracy
+    # collapsed to 65% with dozens of windows showing Rate=0 and nearly
+    # identical feature vectors, all traced to one such stretch. Spreading
+    # the same total across more, smaller blocks keeps each one's chance of
+    # sitting entirely inside a bad stretch roughly constant instead of
+    # scaling up with the sample size.
     t0 = time.perf_counter()
     source_pcap = Path(source_pcap)
 
@@ -100,6 +112,9 @@ def sample_pcap_contiguous(source_pcap, expected_label, out_dir, target_packets=
     take = min(target_packets, total_ip_packets)
     n_blocks = max(1, min(num_blocks, take))
     block_size = (take // n_blocks // WINDOW_SIZE) * WINDOW_SIZE
+    if block_size > max_block_packets:
+        block_size = (max_block_packets // WINDOW_SIZE) * WINDOW_SIZE
+        n_blocks = max(1, take // block_size)
     if block_size == 0:
         block_size = WINDOW_SIZE
     segment_len = total_ip_packets // n_blocks

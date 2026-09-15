@@ -1,0 +1,9 @@
+{
+  "jobs": [],
+  "recommended_replay_params": {
+    "suggested_idle_timeout": 2.0,
+    "suggested_replay_speed": 1.0,
+    "expected_split_flows_pct": 0.0,
+    "basis_gap_percentile_value": 0.0
+  }
+}

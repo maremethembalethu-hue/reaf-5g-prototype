@@ -54,6 +54,15 @@ echo "Removing old REAF containers..."
 docker rm -f reaf-traffic 2>/dev/null || true
 docker rm -f 5g-edge-node 2>/dev/null || true
 docker rm -f dashboard 2>/dev/null || true
+
+
+
+echo "Clearing evaluation logs from previous runs..."
+rm -f "$SCRIPT_DIR/evaluation/items_log.jsonl" \
+      "$SCRIPT_DIR/evaluation/truth_log.jsonl" \
+      "$SCRIPT_DIR/evaluation/debug_predictions.jsonl" \
+      "$SCRIPT_DIR/evaluation/predictions_log.jsonl"
+
 sleep 10
 
 # echo " Samples a fixed number of *complete* flows from a source PCAP... "
@@ -81,3 +90,28 @@ echo " UPF Gateway : $UPF_GW"
 echo ""
 echo " docker logs -f 5g-edge-node"
 echo " docker logs -f reaf-traffic"
+
+
+# Post-replay evaluation, runs automatically once the traffic generator's
+# replay job actually finishes.
+
+echo ""
+echo "Waiting for the traffic-generator replay (reaf-traffic) to finish..."
+docker wait reaf-traffic >/dev/null 2>&1
+echo "Replay finished, running post-run evaluation..."
+ 
+cd "$SCRIPT_DIR/evaluation"
+echo " truth_results.py (joins items_log.jsonl + truth_log.jsonl to joined_results.csv)"
+python3 truth_results.py
+echo " results_builder.py (joined_results.csv), Computes the standard evaluation metrics: confusion matrix, accuracy, per-class precision/recall/F1. "
+python3 results_builder.py
+echo "forensic_validation.py (verifies the evidence hash chain)"
+python3 forensic_validation.py
+cd "$SCRIPT_DIR"
+ 
+echo "Post-run evaluation complete see evaluation/joined_results.csv and the output above."
+
+
+
+echo "Removing Containers After The Experiment.."
+./end.sh
