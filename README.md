@@ -8,7 +8,7 @@ A two-tier (Heavy/Lite) machine-learning intrusion detection system that classif
 
 1. A simulated 5G core (Open5GS + UERANSIM) tunnels traffic from a simulated UE through a UPF network namespace.
 2. A traffic generator replays labeled attack/benign pcap samples through that tunnel.
-3. An edge-node agent captures the decapsulated packets in real time, extracts CICIoT2023-style features, and classifies each window using a 3-stage model pipeline — attack/benign gate to 6-way family classifier to DDoS-vs-DoS split, in either a Heavy (XGBoost) or Lite (Decision Tree) configuration depending on available resources.
+3. An edge-node agent captures the decapsulated packets in real time, extracts CICIoT2023-style features, and classifies each window using a 3-stage model pipeline, attack/benign gate to 6-way family classifier to DDoS-vs-DoS split, in either a Heavy (XGBoost) or Lite (Decision Tree) configuration depending on available resources.
 4. Every detection triggers forensic evidence collection (packet capture, memory snapshot, process list) chained together with a tamper-evident hash log.
 5. A dashboard (optional) shows live detections and computed accuracy; a standalone script can also do this without the dashboard.
 
@@ -19,19 +19,29 @@ A two-tier (Heavy/Lite) machine-learning intrusion detection system that classif
 ```
 reaf-5g-prototype/
  - docker-compose.yml
- - start.sh                     # brings up the whole stack in order
- - 5g-edge-node/                 # MAIN CONTRIBUTION — capture, features, classification, forensics
+ - start.sh                     # brings up the whole stack in order, brings up core to gNB to UE to edge node to traffic generator
+ - end.sh                        # tears everything down in reverse order
+ - 5g-edge-node/                 # MAIN CONTRIBUTION, capture, features, classification, forensics
+   - Dockerfile
    - capture.py                # packet capture, dual-window building, routing to classify_flow()
    - flow_builder.py           # fixed-size (10 / 100 packet) window accumulation
    - feature_extraction.py     # aggregates a completed window into the CICIoT2023 feature vector
    - model_engine.py           # 3-stage ONNX inference + dual-window reconciliation
    - chain_of_custody.py       # SHA-256 hash-chained evidence log
    - memory_snapshot.py        # RAM/process capture at detection time
+   - fragment_reassembly.py    # reassembles IP fragments PRESENT IN THE ORIGINAL traffic
    - resource_monitor.py       # CPU/RAM polling, decides Heavy vs Lite tier
+   - evidence_collect.py       # saves pcap/process/memory/syslog evidence bundle
    - trigger.py                # confidence/rate thresholds for evidence acquisition
    - report_generator.py       # ISO/IEC 27043-structured PDF report per incident
    - detection_models/         # trained ONNX artifacts, copied in from model-training/
- iot-traffic-generator/       # replays labeled CICIoT2023 pcaps through the tunnel
+ - iot-traffic-generator/       # replays labeled CICIoT2023 pcaps through the tunnel
+   - Dockerfile
+│  - requirements.txt
+│  - traffic_generator.py      # orchestrator: synthetic / replay / mixed / random / manifest modes
+│  - replay_engine.py          # reads a pcap, encapsulates + sends each packet
+│  - build_envelope.py               # wire format for encapsulated packets (see "Encapsulation" below)
+│  - pcaps/, pre-selected/     # sampled replay pre-selected/ + manifest_contigenous.json (see evaluation/flow_sampler.py)
  - 5g-core-sim/                  # minimal destination server traffic is forwarded to
  - open5gs/, ueransim/           # simulated 5G core + radio/UE (outsourced, see below)
  - evidence/                     # AUTO-GENERATED at runtime — packets/, memory/, processes/, chain_of_custody.log
@@ -40,12 +50,15 @@ reaf-5g-prototype/
  - evaluation/                   # AUTO-GENERATED at runtime + manual scoring
    - items_log.jsonl           # live, one line per classified window (the real accuracy source)
    - truth_log.jsonl           # live, ground truth per replay job
-   - debug_predictions.jsonl   # live, optional — raw stage probabilities (DEBUG_FEATURES=1)
-   - true_results.py           # manual join step → joined_results.csv (optional if using the dashboard)
+   - debug_predictions.jsonl   # live, optional, raw stage probabilities (DEBUG_FEATURES=1)
+   - true_results.py           # manual join step to joined_results.csv (optional if using the dashboard)
    - results_engine.py         # the join + accuracy logic, shared by true_results.py and the dashboard
- - dashboard/                     # OPTIONAL — live web view of the same data
+   - forensic_validation.py     # independently re-verifies the chain-of-custody hash chain
+ - dashboard/                     # OPTIONAL, live web view of the same data
+    - Dockerfile
     - app.py
     - results_engine.py          # live join, computed on every request — no manual step needed
+    - monitor_tier.py           # CPU/RAM to the live dashboard, show live CPU/RAM
     - templates/index.html
 ```
 
@@ -63,6 +76,24 @@ reaf-5g-prototype/
 
 ---
 
+## Setup
+
+1. Clone the 5G core into this project:
+   ```bash
+   git clone https://github.com/herlesupreeth/docker_open5gs
+   ```
+   Edit its config files to set your PLMN values before first run.
+
+2. Build the two services:
+   ```bash
+   docker compose build
+   ```
+
+3. Sample replay traffic from your raw CICIoT2023 pcaps (offline, runs on
+   your host no containers needed):
+   ```bash
+   python3 iot-traffic-generator/flow_sampler.py
+   ```
 ## Requirements
 
 - Docker + Docker Compose
