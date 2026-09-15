@@ -12,7 +12,6 @@ import optuna
 import psutil
 import matplotlib.pyplot as plt
 import joblib
-import lightgbm as lgb
 
 warnings.filterwarnings("ignore")
 RANDOM_STATE = 42
@@ -63,7 +62,8 @@ print(f"Decision Tree, Lite will train on: {'GPU cuML' if CUML_AVAILABLE else 'C
 
 # Paths & output directory
 CICIOT_ROOT = Path("data/CICIoT2023")
-OUTPUT_DIR = Path("outputs/variation")
+OUTPUT_DIR = Path("outputs/three_stage_reshuffle")
+CICIOT_COMBINED_ROOT = Path("data/MERGED_CSV/MERGED_CSV")
 OUTPUT_DIR.mkdir(exist_ok=True, parents=True)
 
 import os
@@ -129,6 +129,12 @@ ATTACK_FAMILY_MAP = {
     "Recon-PortScan": "Recon", "VulnerabilityScan": "Recon",
     "Benign_Final": "Benign",
 }
+
+# 3-stage architecture: Stage 1 (attack/benign) to Stage 2 (6-way family,
+# DDoS+DoS merged into "Flood") to Stage 3 (DDoS vs DoS, Flood rows only).
+# Every stage trains a Heavy (XGBoost) and a Lite (Decision Tree) model .
+FLOOD_MERGE = {"DDoS": "Flood", "DoS": "Flood"}
+FLOOD_CLASSES = ("DDoS", "DoS")
 
 def list_ciciot_files(class_folder, base_name, n_files, root=CICIOT_ROOT):
     # Reproduces the CICIoT2023 naming convention: base.pcap.csv, base1.pcap.csv, base2.pcap.csv ... base(n-1).pcap.csv
@@ -235,16 +241,18 @@ def clean_dataframe(df, drop_cols=None):
     return df.reset_index(drop=True)
 
 def map_to_attack_family(df, label_col="Label", family_map=ATTACK_FAMILY_MAP):
-    # The 34 raw CICIoT2023 classes into the 8-class attack-family grouping used as the classification target for both Heavy and Lite models.
-    df = df.copy()
-    mapped = df[label_col].map(family_map)
-    unmapped = df.loc[mapped.isna(), label_col].unique().tolist()
-    if unmapped:
-        print(f"[WARN] {len(unmapped)} label(s) had no attack-family mapping and were left unchanged: {unmapped}")
-    df[label_col] = mapped.fillna(df[label_col])
-    print("8-class label distribution after family mapping:")
-    print(df[label_col].value_counts())
-    return df
+     # The 34 raw CICIoT2023 classes into the 8-class attack-family grouping used as the classification target for both Heavy and Lite models.
+     df = df.copy()
+     mapped = df[label_col].map(family_map)
+     unmapped = df.loc[mapped.isna(), label_col].unique().tolist()
+     if unmapped:
+         print(f"[WARN] {len(unmapped)} label(s) had no attack-family mapping and were left unchanged: {unmapped}")
+     df[label_col] = mapped.fillna(df[label_col])
+     print("8-class label distribution after family mapping:")
+     print(df[label_col].value_counts())
+     return df
+
+
 
 def encode_protocol(df, col="Protocol Type"):
     if col not in df.columns:
@@ -287,6 +295,174 @@ HEAVY_FEATURES = [
       "Number", "Variance",]
 
 
+
+
+
+# Synthetic w=100 samples for the w=10-native families (Benign, Web, Recon,
+# Spoofing, BruteForce). DDoS/DoS/
+# Mirai are captured at Number=100 in the real dataset; every other class is
+# captured at Number=10. Stage 2's w=100 buffer (see model_engine.py) only
+# ever saw genuine Flood/Mirai rows during training, so it has no way to
+# recognize "not Flood/Mirai" at w=100 and confidently guesses wrong instead.
+
+W10_NATIVE_CLASSES = {
+    cls: spec for cls, spec in CICIOT_MANIFEST.items()
+    if ATTACK_FAMILY_MAP.get(cls) not in ("DDoS", "DoS", "Mirai")
+}
+
+_W100_MEAN_COLS = [
+    "Header_Length", "Time_To_Live", "fin_flag_number", "syn_flag_number",
+    "rst_flag_number", "psh_flag_number", "ack_flag_number", "ece_flag_number",
+    "cwr_flag_number", "HTTP", "HTTPS", "DNS", "Telnet", "SMTP", "SSH", "IRC",
+    "TCP", "UDP", "DHCP", "ARP", "ICMP", "IGMP", "IPv", "LLC",
+]
+_W100_SUM_COLS = ["ack_count", "syn_count", "fin_count", "rst_count", "Tot sum"]
+
+
+def list_ciciot_merged_files(root=CICIOT_COMBINED_ROOT, start=1, end=63):
+    files = []
+    for i in range(start, end + 1):
+        fpath = root / f"Merged{i:02d}.csv"
+        if fpath.exists():
+            files.append(fpath)
+        else:
+            print(f"[WARN] File not found: {fpath}")
+    if not files:
+        print(f"[WARN] No Merged files found under {root}")
+    return files
+
+def load_ciciot2023_merged(root=CICIOT_COMBINED_ROOT, start=1, end=63, usecols=None,
+                            sample_frac=None, chunksize=500_000):
+    files = list_ciciot_merged_files(root=root, start=start, end=end)
+    if not files:
+        return pd.DataFrame()
+    frames = []
+    for i, fpath in enumerate(files):
+        print(f"Loading {fpath.name} ({i + 1}/{len(files)})...")
+        for chunk in pd.read_csv(fpath, usecols=usecols, chunksize=chunksize, low_memory=False):
+            chunk.columns = [c.strip() for c in chunk.columns]
+            if sample_frac is not None:
+                chunk = chunk.sample(frac=sample_frac, random_state=RANDOM_STATE)
+            frames.append(chunk)
+    if not frames:
+        return pd.DataFrame()
+    full = pd.concat(frames, ignore_index=True)
+    if "Label" in full.columns and "Label" not in full.columns:
+        full = full.rename(columns={"Label": "Label"})
+    elif "LABEL" in full.columns and "Label" not in full.columns:
+        full = full.rename(columns={"LABEL": "Label"})
+    print(f"\nTotal rows loaded: {len(full):,}")
+    if "Label" in full.columns:
+        print("\nClass distribution:")
+        print(full["Label"].value_counts())
+    return full
+
+
+def _reconstruct_w100_row(group):
+    # group: a 10-row DataFrame slice, each row a genuine w=10 sample from
+    # the SAME class, consecutive in original file order.
+    row = {}
+
+    for col in _W100_MEAN_COLS:
+        if col in group.columns:
+            row[col] = float(group[col].mean())
+
+    for col in _W100_SUM_COLS:
+        if col in group.columns:
+            row[col] = float(group[col].sum())
+
+    if "Protocol Type" in group.columns:
+        row["Protocol Type"] = group["Protocol Type"].mode().iloc[0]
+
+    if "Min" in group.columns:
+        row["Min"] = float(group["Min"].min())
+    if "Max" in group.columns:
+        row["Max"] = float(group["Max"].max())
+
+    row["Number"] = 100.0
+
+    tot_sum = row.get("Tot sum")
+    if tot_sum is not None:
+        row["AVG"] = tot_sum / 100.0
+        row["Tot size"] = row["AVG"]  # matches the real data: Tot size == AVG exactly
+
+    if "Rate" in group.columns:
+        rates = group["Rate"].replace(0, np.nan)
+        durations = 10.0 / rates  # Number_i=10 for every w10 row
+        total_duration = durations.sum()
+        row["Rate"] = (100.0 / total_duration) if total_duration and not np.isnan(total_duration) else 0.0
+        if "IAT" not in row and "IAT" in group.columns:
+            iat_total_duration = (9.0 * group["IAT"]).sum()  # ~9 gaps per 10-packet sub-window
+            row["IAT"] = iat_total_duration / 99.0            # ~99 gaps over the combined 100
+
+    if "Std" in group.columns or "Variance" in group.columns:
+        sub_means = group["AVG"] if "AVG" in group.columns else None
+        sub_var_sample = group["Variance"] if "Variance" in group.columns else (group["Std"] ** 2)
+        n = 10
+        sub_var_pop = sub_var_sample * (n - 1) / n           # ddof=1 -> ddof=0
+        overall_mean = sub_means.mean() if sub_means is not None else 0.0
+        between_group = ((sub_means - overall_mean) ** 2).mean() if sub_means is not None else 0.0
+        pooled_pop_var = sub_var_pop.mean() + between_group
+        N = 100
+        pooled_sample_var = pooled_pop_var * N / (N - 1)      # ddof=0 -> ddof=1
+        row["Variance"] = float(pooled_sample_var)
+        row["Std"] = float(np.sqrt(max(pooled_sample_var, 0.0)))
+
+    return row
+
+
+def _safe_transform_protocol(series, proto_encoder):
+    # proto_encoder is fit on the (often small) SAMPLED main dataset
+    known = set(proto_encoder.classes_)
+    as_str = series.astype(str)
+    unseen = ~as_str.isin(known)
+    if unseen.any():
+        print(f"  [WARN] {unseen.sum()} Protocol Type value(s) unseen by proto_encoder "
+              f"during synthesis — mapped to {proto_encoder.classes_[0]!r}")
+        as_str = as_str.where(~unseen, proto_encoder.classes_[0])
+    return proto_encoder.transform(as_str)
+
+
+def synthesize_w100_for_class(class_folder, base_name, n_files, root, label,
+                                proto_encoder, group_size=10, max_groups=2000):
+    df = load_ciciot_class(class_folder, label, base_name, n_files, root)
+    if len(df) == 0:
+        return pd.DataFrame()
+    df = normalize_columns(df)
+    df = clean_dataframe(df)  # drop dupes/NaN/Inf BEFORE grouping — keeps groups clean
+    if "Protocol Type" in df.columns and proto_encoder is not None:
+        df["Protocol Type"] = _safe_transform_protocol(df["Protocol Type"], proto_encoder)
+
+    n_groups = min(len(df) // group_size, max_groups)
+    if n_groups == 0:
+        return pd.DataFrame()
+
+    rows = []
+    for g in range(n_groups):
+        group = df.iloc[g * group_size:(g + 1) * group_size]
+        row = _reconstruct_w100_row(group)
+        row["Label"] = label
+        rows.append(row)
+
+    synth = pd.DataFrame(rows)
+    print(f"  synthesized {len(synth):,} w=100 rows for {label} "
+          f"(from {n_groups * group_size:,}/{len(df):,} w=10 rows)")
+    return synth
+
+
+def generate_synthetic_w100_dataset(proto_encoder, root=CICIOT_ROOT, max_groups_per_class=2000):
+    print("Synthesizing w=100 negative samples for w=10-native classes...")
+    frames = []
+    for cls, (base, n) in W10_NATIVE_CLASSES.items():
+        synth = synthesize_w100_for_class(cls, base, n, root, cls, proto_encoder,
+                                           max_groups=max_groups_per_class)
+        if len(synth):
+            frames.append(synth)
+    if not frames:
+        return pd.DataFrame()
+    combined = pd.concat(frames, ignore_index=True)
+    print(f"Total synthetic w=100 rows: {len(combined):,}")
+    return combined
 
 
 def resolve_feature_set(df, requested_features):
@@ -332,19 +508,6 @@ def undersample_train(df, label_col="y", min_per_class=1000, target_total=None,
     print(out[label_col].value_counts())
     return out
 
-def gain_based_selection(X_train, y_train, top_k=None, median_rule=True):
-    model = lgb.LGBMClassifier(n_estimators=200, random_state=RANDOM_STATE, verbose=-1)
-    model.fit(X_train, y_train)
-    gains = pd.Series(model.booster_.feature_importance(importance_type="gain"),
-                       index=X_train.columns).sort_values(ascending=False)
-    if median_rule:
-        selected = gains[gains > gains.median()].index.tolist()
-    else:
-        selected = gains.head(top_k).index.tolist()
-    return selected if selected else X_train.columns.tolist()
-
-
-
 def gini_based_selection(X_train, y_train, top_k=6):
     model = DecisionTreeClassifier(criterion="gini", random_state=RANDOM_STATE)
     model.fit(X_train, y_train)
@@ -352,30 +515,16 @@ def gini_based_selection(X_train, y_train, top_k=6):
     return importances.sort_values(ascending=False).head(top_k).index.tolist()
 
 
-def select_features_for_track(train_df, candidate_features, heavy_top_k=None,
-                               lite_top_k=6, apply_gain_gini_selection=False):
-
+def select_features_for_track(train_df, candidate_features, lite_top_k=6):
     pearson_kept, _ = pearson_filter(train_df, candidate_features)
     if len(pearson_kept) < 2:
         pearson_kept = candidate_features
-
-    if not apply_gain_gini_selection:
-        heavy_features = pearson_kept
-        # Lite still needs a hard cap — an unpruned 14-feature tree isn't "lite"
-        if len(pearson_kept) > lite_top_k:
-            lite_features = gini_based_selection(
-                train_df[pearson_kept], train_df["y"], top_k=lite_top_k)
-        else:
-            lite_features = pearson_kept
-        return heavy_features, lite_features
-
-    heavy_features = gain_based_selection(
-        train_df[pearson_kept], train_df["y"], top_k=heavy_top_k,
-        median_rule=(heavy_top_k is None),
-    )
-    lite_features = gini_based_selection(
-        train_df[pearson_kept], train_df["y"], top_k=min(lite_top_k, len(pearson_kept)),
-    )
+    heavy_features = pearson_kept
+    if len(pearson_kept) > lite_top_k:
+        lite_features = gini_based_selection(
+            train_df[pearson_kept], train_df["y"], top_k=lite_top_k)
+    else:
+        lite_features = pearson_kept
     return heavy_features, lite_features
 
 def fit_scaler(train_df, feature_cols):
@@ -400,11 +549,19 @@ def compute_sample_weights(y):
     return class_weights[y]
 
 
+def _xgb_objective_params(num_class):
+    # Stage 3 is always binary (DDoS vs DoS) this exists so the objective
+    # is still correct if this script's target ever stops being exactly 2
+    # classes for some reason, rather than silently assuming binary.
+    if num_class == 2:
+        return {"objective": "binary:logistic", "eval_metric": "logloss"}
+    return {"objective": "multi:softprob", "num_class": num_class, "eval_metric": "mlogloss"}
+
+
 def build_xgb_objective(X_train, y_train, X_val, y_val, num_class):
     def objective(trial):
         params = {
-            "objective": "multi:softprob",
-            "num_class": num_class,
+            **_xgb_objective_params(num_class),
             "n_estimators": trial.suggest_int("n_estimators", 100, 400),
             "max_depth": trial.suggest_int("max_depth", 3, 8),
             "learning_rate": trial.suggest_float("learning_rate", 0.03, 0.20),
@@ -417,7 +574,6 @@ def build_xgb_objective(X_train, y_train, X_val, y_val, num_class):
             "device": XGB_DEVICE,
             "random_state": RANDOM_STATE,
             "n_jobs": -1,
-            "eval_metric": "mlogloss",
         }
         model = xgb.XGBClassifier(**params)
         model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
@@ -435,10 +591,10 @@ def tune_heavy_model(X_train, y_train, X_val, y_val, num_class, n_trials=15):
     return study.best_params
 
 def train_heavy_model(X_train, y_train, X_val, y_val, num_class, best_params):
-    params = {**best_params, "objective": "multi:softprob", "num_class": num_class,
+    eval_metric = ["logloss", "error"] if num_class == 2 else ["mlogloss", "merror"]
+    params = {**best_params, **_xgb_objective_params(num_class),
               "tree_method": XGB_TREE_METHOD, "device": XGB_DEVICE,
-              "random_state": RANDOM_STATE, "n_jobs": -1,
-              "eval_metric": ["mlogloss", "merror"]}
+              "random_state": RANDOM_STATE, "n_jobs": -1, "eval_metric": eval_metric}
     sample_weights = compute_sample_weights(y_train.values)
     t0 = time.perf_counter()
     model = xgb.XGBClassifier(**params)
@@ -492,7 +648,10 @@ def evaluate_model(model, X_test, y_test, label_names=None, model_name="model"):
     try:
         if hasattr(model, "predict_proba"):
             y_proba = model.predict_proba(X_test)
-            roc_auc = roc_auc_score(y_test, y_proba, multi_class="ovr", average="macro")
+            if y_proba.shape[1] == 2:
+                roc_auc = roc_auc_score(y_test, y_proba[:, 1])
+            else:
+                roc_auc = roc_auc_score(y_test, y_proba, multi_class="ovr", average="macro")
     except Exception as e:
         print(f"[WARN] ROC-AUC not computed: {e}")
 
@@ -517,19 +676,21 @@ def model_size_bytes(model, path):
 
 
 # XGBoost does have boosting rounds, and can track train-vs-validation loss across them this is to show did the model behave during training, plot can get for a gradient-boosted model.
-def plot_xgb_training_curve(evals_result, model_name="HeavyNet (XGBoost)"):
+def plot_xgb_training_curve(evals_result, model_name="HeavyNet (XGBoost) — Stage 3"):
+        loss_key = "logloss" if "logloss" in evals_result["validation_0"] else "mlogloss"
+        err_key = "error" if "error" in evals_result["validation_0"] else "merror"
         fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-        rounds = range(len(evals_result["validation_0"]["mlogloss"]))
+        rounds = range(len(evals_result["validation_0"][loss_key]))
 
-        axes[0].plot(rounds, evals_result["validation_0"]["mlogloss"], label="training")
-        axes[0].plot(rounds, evals_result["validation_1"]["mlogloss"], label="validation")
-        axes[0].set_xlabel("boosting round"); axes[0].set_ylabel("mlogloss")
+        axes[0].plot(rounds, evals_result["validation_0"][loss_key], label="training")
+        axes[0].plot(rounds, evals_result["validation_1"][loss_key], label="validation")
+        axes[0].set_xlabel("boosting round"); axes[0].set_ylabel(loss_key)
         axes[0].set_title(f"{model_name} — log loss per round")
         axes[0].legend()
 
-        axes[1].plot(rounds, evals_result["validation_0"]["merror"], label="training")
-        axes[1].plot(rounds, evals_result["validation_1"]["merror"], label="validation")
-        axes[1].set_xlabel("boosting round"); axes[1].set_ylabel("multiclass error rate")
+        axes[1].plot(rounds, evals_result["validation_0"][err_key], label="training")
+        axes[1].plot(rounds, evals_result["validation_1"][err_key], label="validation")
+        axes[1].set_xlabel("boosting round"); axes[1].set_ylabel(err_key)
         axes[1].set_title(f"{model_name} — error rate per round")
         axes[1].legend()
         plt.tight_layout()
@@ -607,53 +768,6 @@ def plot_model_comparison(heavy_results, lite_results):
     plt.show()
 
 
-def label_to_binary(label_series, benign_labels):
-    return (~label_series.isin(benign_labels)).astype(int)
-
-def evaluate_indomain_binary(model, X_test, y_test, label_encoder, benign_class_name="Benign_Final", model_name="model"):
-    y_pred_class = model.predict(X_test)
-    
-    # Safe check for the benign index
-    classes_list = list(label_encoder.classes_)
-    if benign_class_name in classes_list:
-        benign_idx = classes_list.index(benign_class_name)
-    else:
-        print(f"Warning: '{benign_class_name}' not found in encoder classes: {classes_list}. Defaulting to index 0.")
-        benign_idx = 0  # Fallback standard
-        
-    y_true_bin = (y_test.values != benign_idx).astype(int)
-    y_pred_bin = (y_pred_class != benign_idx).astype(int)
-    acc = accuracy_score(y_true_bin, y_pred_bin)
-    p, r, f1, _ = precision_recall_fscore_support(y_true_bin, y_pred_bin, average="binary", zero_division=0)
-    return {"model": model_name, "accuracy": acc, "precision": p, "recall": r, "f1": f1}
-
-
-def plot_external_confusion_matrix(result, model_name="model"):
-    fig, ax = plt.subplots(figsize=(5, 5))
-    disp = ConfusionMatrixDisplay(confusion_matrix=np.array(result["confusion_matrix"]),
-                                   display_labels=["Benign", "Attack"])
-    disp.plot(ax=ax, cmap="Oranges", colorbar=True)
-    ax.set_title(f"{model_name} — IDS2018 generalization (binary, approximate)")
-    plt.tight_layout()
-    plt.show()
-
-def plot_generalization_comparison(indomain_bin, external_bin, model_name="model"):
-    # Side-by-side in-domain vs. external performance
-    metrics = ["accuracy", "precision", "recall", "f1"]
-    in_vals = [indomain_bin[m] for m in metrics]
-    ext_vals = [external_bin[m] for m in metrics]
-    x = np.arange(len(metrics)); width = 0.35
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.bar(x - width/2, in_vals, width, label="In-domain (CICIoT2023 test)")
-    ax.bar(x + width/2, ext_vals, width, label="External (IDS2018, approximate)")
-    ax.set_xticks(x); ax.set_xticklabels(metrics)
-    ax.set_ylim(0, 1)
-    ax.set_title(f"{model_name} — in-domain vs. external generalization (binary)")
-    ax.legend()
-    plt.tight_layout()
-    plt.show()
-
-
 def export_heavy_to_onnx(xgb_model, n_features, out_path):
     from onnxmltools import convert_xgboost
     from onnxmltools.convert.common.data_types import FloatTensorType
@@ -695,150 +809,214 @@ def get_unique_path(path):
             return candidate
         counter += 1
 
-def run_pipeline(sample_frac_ciciot=0.02, optuna_trials=15, min_per_class=1000,
-                  undersample_min_per_class=1000, undersample_target_total=None):
-   
+def train_and_evaluate_stage(train_h, val_h, test_h, heavy_features,
+                              train_l, test_l, lite_features,
+                              y_col, num_class, class_names, optuna_trials, tag):
+    # Trains and evaluates the Heavy(XGBoost)/Lite(DecisionTree) pair for
+    # ONE stage. Returns everything the caller needs to export and report.
+    best_params = tune_heavy_model(train_h[heavy_features], train_h[y_col],
+                                    val_h[heavy_features], val_h[y_col],
+                                    num_class, n_trials=optuna_trials)
+    heavy_model, heavy_evals = train_heavy_model(train_h[heavy_features], train_h[y_col],
+                                                  val_h[heavy_features], val_h[y_col],
+                                                  num_class, best_params)
+    lite_model = train_lite_model(train_l[lite_features], train_l[y_col])
 
-    # Flow Feature Extraction Engine
+    print(f"\nHeavy model — {tag}, CICIoT2023 test:")
+    heavy_results = evaluate_model(heavy_model, test_h[heavy_features], test_h[y_col],
+                                    label_names=class_names, model_name=f"heavy_{tag}_xgboost")
+    print(f"\nLite model — {tag}, CICIoT2023 test:")
+    lite_results = evaluate_model(lite_model, test_l[lite_features], test_l[y_col],
+                                   label_names=class_names, model_name=f"lite_{tag}_decision_tree")
+
+    plot_xgb_training_curve(heavy_evals, model_name=f"HeavyNet (XGBoost) — {tag}")
+    plot_confusion_matrix(heavy_model, test_h[heavy_features], test_h[y_col], class_names,
+                           f"HeavyNet (XGBoost) — {tag}")
+    plot_confusion_matrix(lite_model, test_l[lite_features], test_l[y_col], class_names,
+                           f"LiteNet (Decision Tree) — {tag}")
+    plot_feature_importance(heavy_model, heavy_features, f"HeavyNet (XGBoost) — {tag}")
+    plot_feature_importance(lite_model, lite_features, f"LiteNet (Decision Tree) — {tag}")
+    plot_model_comparison(heavy_results, lite_results)
+
+    return heavy_model, lite_model, heavy_results, lite_results
+
+
+def print_stage3_subtype_breakdown(model, flood_test, features, stage3_encoder, tag):
+     if "RawLabel" not in flood_test.columns:
+         print(f"[{tag}] RawLabel not available — skipping per-subtype breakdown")
+         return
+     preds = model.predict(flood_test[features])
+     pred_labels = stage3_encoder.inverse_transform(preds)
+     true_labels = flood_test["Label"].values
+     subtypes = flood_test["RawLabel"].values
+
+     print(f"\n--- Stage 3 ({tag}) accuracy by original subtype ---")
+     for subtype in sorted(set(subtypes)):
+         mask = subtypes == subtype
+         n = mask.sum()
+         if n == 0:
+             continue
+         acc = (pred_labels[mask] == true_labels[mask]).mean()
+         print(f"  {subtype:28s} n={n:6d}  accuracy={acc:.3f}")
+
+
+def run_pipeline(sample_frac_ciciot=0.5, optuna_trials=7, min_per_class=1000,
+                  undersample_min_per_class=1000, undersample_target_total=None):
+    # Full 3-stage architecture. Every stage trains a Heavy (XGBoost) and a
+    # Lite (Decision Tree) model only models total, 6 ONNX exports total.
+
+    # Flow Feature Extraction Engine data loading itself is unchanged.
     ciciot_raw = load_ciciot2023_floored(sample_frac=sample_frac_ciciot, min_per_class=min_per_class)
-    ciciot_raw = normalize_columns(ciciot_raw)
    
+    #ciciot_raw = load_ciciot2023_merged(sample_frac=sample_frac_ciciot)
+    ciciot_raw = normalize_columns(ciciot_raw)
+
     # Data Cleaning & Normalization Module + Common Feature Processing Layer
     ciciot = clean_dataframe(ciciot_raw)
     ciciot, proto_encoder = encode_protocol(ciciot)
 
-    # Label Definition: collapse to the 8-class attack-family grouping
-   # ciciot = map_to_attack_family(ciciot)
+  
+    ciciot["RawLabel"] = ciciot["Label"]
+    ciciot = map_to_attack_family(ciciot)
 
     # Stratified 80/20 split (validation carved out of TRAIN only; TEST held out untouched)
     train, val, test = split_ciciot(ciciot)
-    print(train["Label"].value_counts())
-    print(train[train["Label"].isin(["BenignTraffic", "Benign_Final", "Benign"])]["Label"].value_counts())
-
-    # Target encoding (fit on TRAIN only)
-    label_encoder = LabelEncoder()
+    # Full 8-class target used only for stratified undersampling, so every
+    # family (including the ones stage 1/2/3 don't directly train on) stays
+    # balanced going into the per-stage target derivations below.
+    full_label_encoder = LabelEncoder()
     train = train.copy(); val = val.copy(); test = test.copy()
-    train["y"] = label_encoder.fit_transform(train["Label"])
-    val["y"] = label_encoder.transform(val["Label"])
-    test["y"] = label_encoder.transform(test["Label"])
-    num_class = len(label_encoder.classes_)
+    train["y"] = full_label_encoder.fit_transform(train["Label"])
+    val["y"] = full_label_encoder.transform(val["Label"])
+    test["y"] = full_label_encoder.transform(test["Label"])
 
-    # Resampling: stratified undersampling applied to TRAIN only, after label encoding 
     train = undersample_train(
         train, label_col="y",
         min_per_class=undersample_min_per_class,
         target_total=undersample_target_total,
     )
 
-   
-        
-    heavy_features= resolve_feature_set(train, HEAVY_FEATURES)
+    # Augment TRAIN ONLY with synthetic w=100 rows for the w=10-native
+    # families val/test stay pure, genuine per-CSV rows for honest
+    # evaluation. 
+    synthetic_w100 = generate_synthetic_w100_dataset(proto_encoder, max_groups_per_class=2000)
+    if len(synthetic_w100):
+        synthetic_w100 = map_to_attack_family(synthetic_w100)
+        synthetic_w100["y"] = full_label_encoder.transform(synthetic_w100["Label"])
+        train = pd.concat([train, synthetic_w100], ignore_index=True)
+        print(f"Train set after adding synthetic w=100 rows: {len(train):,}")
+
+    heavy_features = resolve_feature_set(train, HEAVY_FEATURES)
     lite_features = resolve_feature_set(train, LITE_FEATURES)
-    
-   # heavy_features, _ = select_features_for_track(train, heavy_features, heavy_top_k=None)
-    #_, lite_features = select_features_for_track(train, lite_features, lite_top_k=6)
-    # Scaling 
+
     heavy_scaler = fit_scaler(train, heavy_features)
     lite_scaler = fit_scaler(train, lite_features)
-
-    print("heavy_scaler: ")
-    print(heavy_scaler)
-    print("lite_scaler: ")
-    print(lite_scaler)
 
     train_h = apply_scaler(train, heavy_features, heavy_scaler)
     val_h = apply_scaler(val, heavy_features, heavy_scaler)
     test_h = apply_scaler(test, heavy_features, heavy_scaler)
-
     train_l = apply_scaler(train, lite_features, lite_scaler)
     val_l = apply_scaler(val, lite_features, lite_scaler)
     test_l = apply_scaler(test, lite_features, lite_scaler)
 
-    # XGBoost Model GPU-accelerated, inverse-frequency sample weighted, narrow Optuna search
-    best_params = tune_heavy_model(train_h[heavy_features], train_h["y"],
-                                    val_h[heavy_features], val_h["y"],
-                                    num_class, n_trials=optuna_trials)
-    heavy_model, heavy_evals = train_heavy_model(train_h[heavy_features], train_h["y"],
-                                                val_h[heavy_features], val_h["y"],
-                                                num_class, best_params)
-    #print(f"The Heavy Model Evaluation {heavy_evals}")
-    # Decision Tree minimally tuned low-complexity baseline
-    lite_model = train_lite_model(train_l[lite_features], train_l["y"])
+    #  STAGE 1: attack vs benign 
+    for df in (train_h, val_h, test_h, train_l, val_l, test_l):
+        df["y_stage1"] = (df["Label"] != "Benign").astype(int)
 
-    # In-domain evaluation — called exactly once per model against the held-out TEST set
-    print("\n Heavy model (CICIoT2023 test):")
-    heavy_results = evaluate_model(heavy_model, test_h[heavy_features], test_h["y"],
-                                    label_names=label_encoder.classes_, model_name=f"heavy_xgboost")
-    print("\nLite model (CICIoT2023 test):")
-    lite_results = evaluate_model(lite_model, test_l[lite_features], test_l["y"],
-                                label_names=label_encoder.classes_, model_name=f"lite_decision_tree")
+    stage1_heavy, stage1_lite, stage1_heavy_res, stage1_lite_res = train_and_evaluate_stage(
+        train_h, val_h, test_h, heavy_features, train_l, test_l, lite_features,
+        y_col="y_stage1", num_class=2, class_names=["Benign", "Attack"],
+        optuna_trials=optuna_trials, tag="stage1",
+    )
 
-    # In-domain plots
-    plot_xgb_training_curve(heavy_evals)
-    plot_confusion_matrix(heavy_model, test_h[heavy_features], test_h["y"], label_encoder.classes_, f"HeavyNet (XGBoost)")
-    plot_confusion_matrix(lite_model, test_l[lite_features], test_l["y"], label_encoder.classes_, f"LiteNet (Decision Tree)")
-    plot_feature_importance(heavy_model, heavy_features, f"HeavyNet (XGBoost)")
-    plot_feature_importance(lite_model, lite_features, f"LiteNet (Decision Tree)")
-    plot_learning_curve(DecisionTreeClassifier(**LITE_PARAMS), train_l[lite_features], train_l["y"], f"LiteNet (Decision Tree)")
-    plot_model_comparison(heavy_results, lite_results)
+    #  STAGE 2: 6-way family, ATTACK rows only 
+    attack_train_h = train_h[train_h["Label"] != "Benign"].reset_index(drop=True)
+    attack_val_h = val_h[val_h["Label"] != "Benign"].reset_index(drop=True)
+    attack_test_h = test_h[test_h["Label"] != "Benign"].reset_index(drop=True)
+    attack_train_l = train_l[train_l["Label"] != "Benign"].reset_index(drop=True)
+    attack_test_l = test_l[test_l["Label"] != "Benign"].reset_index(drop=True)
 
-    heavy_indomain_bin = evaluate_indomain_binary(heavy_model, test_h[heavy_features], test_h["y"],
-                                                    label_encoder, model_name="HeavyNet (XGBoost)")
-    print(f"{heavy_indomain_bin}, Model : HeavyNet (XGBoost)")
-    lite_indomain_bin = evaluate_indomain_binary(lite_model, test_l[lite_features], test_l["y"],
-                                                label_encoder, model_name="LiteNet (Decision Tree)")
-    print(f"{lite_indomain_bin}, Model : LiteNet (Decision Tree)")
+    stage2_encoder = LabelEncoder().fit(attack_train_h["Label"].replace(FLOOD_MERGE))
+    stage2_classes = list(stage2_encoder.classes_)
+    for df in (attack_train_h, attack_val_h, attack_test_h, attack_train_l, attack_test_l):
+        df["y_stage2"] = stage2_encoder.transform(df["Label"].replace(FLOOD_MERGE))
 
-    # Export to ONNX
-    heavy_onnx_path = get_unique_path(OUTPUT_DIR / f"heavy_xgboost.onnx")
-    lite_onnx_path = get_unique_path(OUTPUT_DIR / f"lite_decision_tree.onnx")
-    try:
-        export_heavy_to_onnx(heavy_model, len(heavy_features), str(heavy_onnx_path))
-    except Exception as e:
-        print(f"[WARN] Heavy ONNX export failed: {e}")
-        heavy_onnx_path = None
-    try:
-        export_lite_to_onnx(lite_model, len(lite_features), str(lite_onnx_path))
-    except Exception as e:
-        print(f"[WARN] Lite ONNX export failed: {e}")
-        lite_onnx_path = None
+    stage2_heavy, stage2_lite, stage2_heavy_res, stage2_lite_res = train_and_evaluate_stage(
+        attack_train_h, attack_val_h, attack_test_h, heavy_features,
+        attack_train_l, attack_test_l, lite_features,
+        y_col="y_stage2", num_class=len(stage2_classes), class_names=stage2_classes,
+        optuna_trials=optuna_trials, tag="stage2",
+    )
 
-    heavy_scaler_path = get_unique_path(
-            OUTPUT_DIR / f"heavy_scaler.pkl"
-        )
+    #  STAGE 3: DDoS vs DoS, FLOOD rows only 
+    flood_train_h = attack_train_h[attack_train_h["Label"].isin(FLOOD_CLASSES)].reset_index(drop=True)
+    flood_val_h = attack_val_h[attack_val_h["Label"].isin(FLOOD_CLASSES)].reset_index(drop=True)
+    flood_test_h = attack_test_h[attack_test_h["Label"].isin(FLOOD_CLASSES)].reset_index(drop=True)
+    flood_train_l = attack_train_l[attack_train_l["Label"].isin(FLOOD_CLASSES)].reset_index(drop=True)
+    flood_test_l = attack_test_l[attack_test_l["Label"].isin(FLOOD_CLASSES)].reset_index(drop=True)
 
-    lite_scaler_path = get_unique_path(
-            OUTPUT_DIR / f"lite_scaler.pkl"
-        )
+    stage3_encoder = LabelEncoder().fit(flood_train_h["Label"])
+    stage3_classes = list(stage3_encoder.classes_)
+    for df in (flood_train_h, flood_val_h, flood_test_h, flood_train_l, flood_test_l):
+        df["y_stage3"] = stage3_encoder.transform(df["Label"])
 
-    label_encoder_path = get_unique_path(
-            OUTPUT_DIR / f"label_encoder.pkl"
-        )
+    stage3_heavy, stage3_lite, stage3_heavy_res, stage3_lite_res = train_and_evaluate_stage(
+        flood_train_h, flood_val_h, flood_test_h, heavy_features,
+        flood_train_l, flood_test_l, lite_features,
+        y_col="y_stage3", num_class=len(stage3_classes), class_names=stage3_classes,
+        optuna_trials=optuna_trials, tag="stage3",
+    )
 
-    feature_lists_path = get_unique_path(
-            OUTPUT_DIR / f"feature_lists.json"
-        )
+    # Per-subtype breakdown the aggregate DDoS-vs-DoS number above blends
+    print_stage3_subtype_breakdown(stage3_heavy, flood_test_h, heavy_features, stage3_encoder, "Heavy")
+    print_stage3_subtype_breakdown(stage3_lite, flood_test_l, lite_features, stage3_encoder, "Lite")
 
-    joblib.dump(heavy_scaler, heavy_scaler_path)
-    joblib.dump(lite_scaler, lite_scaler_path)
-    joblib.dump(label_encoder, label_encoder_path)
+    #  Export, ONLY the 6 stage models, XGBoost/DecisionTree only 
+    onnx_paths = {}
+    stage_models = {
+        "stage1": (stage1_heavy, stage1_lite),
+        "stage2": (stage2_heavy, stage2_lite),
+        "stage3": (stage3_heavy, stage3_lite),
+    }
+    for stage_tag, (heavy_model, lite_model) in stage_models.items():
+        heavy_onnx_path = get_unique_path(OUTPUT_DIR / f"heavy_{stage_tag}_xgboost.onnx")
+        lite_onnx_path = get_unique_path(OUTPUT_DIR / f"lite_{stage_tag}_decision_tree.onnx")
+        try:
+            export_heavy_to_onnx(heavy_model, len(heavy_features), str(heavy_onnx_path))
+            onnx_paths[f"heavy_{stage_tag}"] = heavy_onnx_path.name
+        except Exception as e:
+            print(f"[WARN] {stage_tag} Heavy ONNX export failed: {e}")
+            onnx_paths[f"heavy_{stage_tag}"] = None
+        try:
+            export_lite_to_onnx(lite_model, len(lite_features), str(lite_onnx_path))
+            onnx_paths[f"lite_{stage_tag}"] = lite_onnx_path.name
+        except Exception as e:
+            print(f"[WARN] {stage_tag} Lite ONNX export failed: {e}")
+            onnx_paths[f"lite_{stage_tag}"] = None
 
-    with open(feature_lists_path, "w") as f:
-        json.dump(
-                {
-                    "heavy_features": heavy_features,
-                    "lite_features": lite_features
-                },
-                f,
-                indent=2
-            )
-
+    joblib.dump(heavy_scaler, get_unique_path(OUTPUT_DIR / "heavy_scaler.pkl"))
+    joblib.dump(lite_scaler, get_unique_path(OUTPUT_DIR / "lite_scaler.pkl"))
+    joblib.dump(full_label_encoder, get_unique_path(OUTPUT_DIR / "full_label_encoder.pkl"))
+    joblib.dump(stage2_encoder, get_unique_path(OUTPUT_DIR / "stage2_encoder.pkl"))
+    joblib.dump(stage3_encoder, get_unique_path(OUTPUT_DIR / "stage3_encoder.pkl"))
     joblib.dump(proto_encoder, OUTPUT_DIR / "protocol_encoder.joblib")
-    print(f"\nAll models and artifacts written to: {OUTPUT_DIR.resolve()}")
 
+    with open(get_unique_path(OUTPUT_DIR / "feature_lists.json"), "w") as f:
+        json.dump({
+            "heavy_features": heavy_features,
+            "lite_features": lite_features,
+            "stage2_classes": stage2_classes,
+            "stage3_classes": stage3_classes,
+            "onnx_files": onnx_paths,
+        }, f, indent=2)
+
+    print(f"\nAll 6 stage models and artifacts written to: {OUTPUT_DIR.resolve()}")
+    return {
+        "stage1": {"heavy": stage1_heavy_res, "lite": stage1_lite_res},
+        "stage2": {"heavy": stage2_heavy_res, "lite": stage2_lite_res},
+        "stage3": {"heavy": stage3_heavy_res, "lite": stage3_lite_res},
+    }
 
 
 if __name__ == "__main__":
-
-    run_pipeline(sample_frac_ciciot=0.02, optuna_trials=15, min_per_class=1000)
- 
+    run_pipeline(sample_frac_ciciot=0.5, optuna_trials=7, min_per_class=1000)

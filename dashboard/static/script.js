@@ -62,14 +62,24 @@ async function loadTimeline(){
   timelineChart = new Chart(ctx, {type:'line', data, options:{responsive:true, plugins:{legend:{position:'bottom'}}}});
 }
 
-async function loadCustody(){
-  const c = await get('/api/custody');
-  document.getElementById('custody-status').innerHTML =
-    `${c.intact ? '#006400' : '#ff0000'} ${c.total} entries verified · ${c.broken} broken links`;
-  document.getElementById('chain-list').innerHTML = c.entries.slice(-12).map(e =>
-    `<div class="chain-row"><span>#${e.id} ${e.hash}</span><span style="color: #006400;">0</span></div>`).join('');
-}
+async function loadCustody() {
+    const c = await get('/api/custody');
 
+    const color = c.intact ? '#006400' : '#ff0000';
+
+    document.getElementById('custody-status').innerHTML =
+        `<span style="color: ${color};">
+            ${c.total} entries verified · ${c.broken} broken links
+        </span>`;
+
+    document.getElementById('chain-list').innerHTML =
+        c.entries.slice(-12).map(e =>
+            `<div class="chain-row">
+                <span>#${e.id} ${e.hash}</span>
+                <span style="color: ${c.intact ? '#006400' : '#ff0000'};"></span>
+            </div>`
+        ).join('');
+}
 async function loadAccuracy(){
   const d = await get('/api/accuracy');
   document.querySelector('#accuracy-table tbody').innerHTML = d.rows.map(r =>

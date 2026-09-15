@@ -20,7 +20,7 @@ RUNS_DIR = os.path.join(EVAL_DIR, "runs")   # optional convention, see /api/runs
 
 MIN_MARGIN = 0.20  # matches model_engine.py's stage-3 confidence gate
 
-resource_history = deque(maxlen=40)
+resource_history = deque(maxlen=3)
 #  helpers
 
 def load_jsonl(path, limit=None):
@@ -100,8 +100,10 @@ def stats():
     # Prefer the edge node's OWN logged readings 
     
     try:
-        import psutil
-        cpu, ram = psutil.cpu_percent(), psutil.virtual_memory().percent
+        metrics = get_metrics()
+        cpu=  metrics["cpu_percent"]
+        ram = metrics["ram_percent"]
+        tier = get_model_tier()
     except Exception:
         cpu, ram = None, None
         tier = None  # can't know the edge node's real tier without its own log
@@ -209,7 +211,7 @@ def timeline():
     tier = get_model_tier()
 
     resource_history.append({
-        "time": time.time(),
+        "time":fmt_time( time.time()),
         "cpu": metrics["cpu_percent"],
         "ram": metrics["ram_percent"],
         "model": tier_for(tier)

@@ -14,7 +14,7 @@ CODE_DIR = Path(__file__).resolve().parent
 
 DEFAULT_EVIDENCE_DIR =   CODE_DIR.parent / Path(os.getenv("EVIDENCE_DIR", "evidence"))
 DEFAULT_JOINED_RESULTS = "evaluation/joined_results.csv"
-DEFAULT_OUT = "evaluation/forensic_validation_report.json"
+DEFAULT_OUT = "validation/forensic_validation_report.json"
 
 
 def hash_directory(directory):
