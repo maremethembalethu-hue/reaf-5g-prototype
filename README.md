@@ -1,5 +1,12 @@
 # REAF-5G: Real-time Edge Adaptive Forensic IDS for 5G IoT
 
+---
+#### This repository contains the code and experimental data for my BSc(Hons) research project in Computer Science at the University of Pretoria.
+
+### Author: Thembalethu Mareme
+### Supervisor: Mr Sheunesu Makura
+### University of Pretoria
+---
 A two-tier (Heavy/Lite) machine-learning intrusion detection system that classifies live traffic at a simulated 5G edge node (UPF), trained on CICIoT2023, with forensic evidence preservation and a live results dashboard.
 
 ---
