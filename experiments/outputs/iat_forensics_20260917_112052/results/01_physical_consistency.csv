@@ -1,0 +1,5 @@
+dataset,check,correlation,median_ratio,log_correlation,n
+watai,IAT*(Number-1) vs Duration,-0.005663729050282521,11037607.0,,
+watai,IAT*(Number-1) vs flow_duration,-0.0002839450538957739,6956022784.0,,
+watai,IAT vs 1/Rate,-0.00018008447424997857,,-0.007127254925910405,20199624.0
+merged,IAT vs 1/Rate,0.999991621516415,,0.9905603358234454,8840528.0

@@ -1,0 +1,10 @@
+metric,value,flag
+"max |univariate AUC delta| (DDoS vs DoS, shared features)",0.42156009310957687,LIKELY CONTRIBUTOR
+# shared features with AUC(watai)-AUC(merged) > 0.10 for DDoS/DoS,1,LIKELY CONTRIBUTOR
+DDoS-DoS separation ratio drop (watai - merged),-0.47151054980633145,unlikely on its own
+correlation matrix Frobenius-norm difference (37x37 shared features),,unlikely on its own
+merged-only column 'Time_To_Live' near-constant?,False,carries some signal
+merged-only column 'IGMP' near-constant?,False,carries some signal
+"largest distribution shift (KS stat) in shared features, DDoS/DoS rows: 'Number'",0.9998110224316373,LIKELY CONTRIBUTOR
+"largest distribution shift (KS stat) in shared features, DDoS/DoS rows: 'IAT'",0.9996629631351401,LIKELY CONTRIBUTOR
+"largest distribution shift (KS stat) in shared features, DDoS/DoS rows: 'Tot sum'",0.9592988791607266,LIKELY CONTRIBUTOR

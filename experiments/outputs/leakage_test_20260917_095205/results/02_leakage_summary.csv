@@ -1,0 +1,6 @@
+metric,value
+mean label purity across source files (1.0 = every file is 100% one class),0.8033781669559001
+fraction of files with label_purity == 1.0,0.0
+global IAT variance,1950195646464.0
+average within-file IAT variance,1950197751250.7368
+share of IAT variance explained by source_file (eta-squared-like; near 1.0 = IAT is basically a file ID),-1.079269529080662e-06
