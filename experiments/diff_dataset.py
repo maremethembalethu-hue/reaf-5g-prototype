@@ -429,7 +429,7 @@ def correlation_structure_diff(watai_df, merged_df, features):
     return pairs_df, frob
 
 
-#  section 09: merged-only columns diagnostics 
+#  section 9: merged-only columns diagnostics 
 def merged_only_columns_diagnostics(merged_df, features=MERGED_ONLY_FEATURES):
     classes = sorted(merged_df["family"].unique())
     rows = []

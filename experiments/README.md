@@ -6,7 +6,7 @@ DDoS-vs-DoS classification while a 39-feature merged dataset ("merged") only sco
 the missing features" to "one specific column fails basic physical-consistency
 checks.
 
-## TL;DR
+## TL,DR
 
 
 The original hypothesis that wataiData's extra engineered features (`Srate`,
@@ -24,7 +24,6 @@ close to merged's (~73.6%).
 ## Repository structure
 
 ```
-.
  - experiment_file.py                    # full 5-experiment production-style pipeline
  - experiment_dataset.py   # Srate/Drate ablation + decomposition + LOO
  - diff_dataset.py            # 10-section statistical dataset comparison
@@ -86,11 +85,11 @@ Decision Tree, and others).
 
 | Experiment | What it does |
 |---|---|
-| 1 — Dataset comparison | Every model, all available features, on each dataset, flat 8-class target |
-| 2 — Feature selection | Pearson-filter to Gini-rank to top-25 "Heavy" / top-15 "Lite" feature sets, computed per dataset, plus a feature-count sweep to justify the cutoff |
-| 3 — Srate/Drate ablation | wataiData-only ablation: all-46 vs common-37 vs 46-minus-Srate/Drate |
-| 4 — Data-volume scaling | Same model/features at 10/25/50/75/100% of the training split |
-| 5 — Flat vs 3-stage cascade | Justifies the production 3-stage architecture against a single flat classifier |
+| 1. Dataset comparison | Every model, all available features, on each dataset, flat 8-class target |
+| 2. Feature selection | Pearson-filter to Gini-rank to top-25 "Heavy" / top-15 "Lite" feature sets, computed per dataset, plus a feature-count sweep to justify the cutoff |
+| 3. Srate/Drate ablation | wataiData-only ablation: all-46 vs common-37 vs 46-minus-Srate/Drate |
+| 4. Data-volume scaling | Same model/features at 10/25/50/75/100% of the training split |
+| 5. Flat vs 3-stage cascade | Justifies the production 3-stage architecture against a single flat classifier |
 
 **Output:** `outputs/experiments_<run_id>/results/master_results.csv` (one row per
 model x experiment x feature-set) and `outputs/experiments_<run_id>/plots/*.png`
@@ -152,7 +151,7 @@ file's rows ever appear in both train and test), crossed with three feature sets
 (full 46 / minus IAT / minus IAT & Number).
 
 **Output:** `outputs/leakage_test_<run_id>/results/`
-- `leakage_test_master_results.csv`: all 6 watai conditions × 2 models + the merged
+- `leakage_test_master_results.csv`: all 6 watai conditions x 2 models + the merged
   reference run
 - `1_per_file_leakage_diagnostic.csv`: per-file label purity and IAT stats
 - `2_leakage_summary.csv`: headline numbers (label purity, share of IAT variance
@@ -182,7 +181,7 @@ assumptions required):
 `outputs/iat_forensics_<run_id>/plots/` (a Duration-vs-derived-duration scatter, IAT
 histograms by class for both datasets).
 
-**Result:** merged's `IAT` correlates with `1/Rate` at 0.99999 — essentially exact.
+**Result:** merged's `IAT` correlates with `1/Rate` at 0.99999, essentially exact.
 wataiData's correlates at −0.0002 with `1/Rate` and −0.006 with `Duration`,
 essentially zero on every check. Combined with the quantization result (23,932
 unique values across 20.4M rows, vs. 344,434 unique values across 8.8M rows in

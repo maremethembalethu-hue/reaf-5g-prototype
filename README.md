@@ -44,14 +44,15 @@ reaf-5g-prototype/
    - detection_models/         # trained ONNX artifacts, copied in from model-training/
  - iot-traffic-generator/       # replays labeled CICIoT2023 pcaps through the tunnel
    - Dockerfile
-│  - requirements.txt
-│  - traffic_generator.py      # orchestrator: synthetic / replay / mixed / random / manifest modes
-│  - replay_engine.py          # reads a pcap, encapsulates + sends each packet
-│  - build_envelope.py               # wire format for encapsulated packets (see "Encapsulation" below)
-│  - pcaps/, pre-selected/     # sampled replay pre-selected/ + manifest_contigenous.json (see evaluation/flow_sampler.py)
+   - requirements.txt
+   - traffic_generator.py      # orchestrator: synthetic / replay / mixed / random / manifest modes
+   - replay_engine.py          # reads a pcap, encapsulates + sends each packet
+   - build_envelope.py               # wire format for encapsulated packets (see "Encapsulation" below)
+   - pcaps/, pre-selected/     # sampled replay pre-selected/ + manifest_contigenous.json (see evaluation/flow_sampler.py)
  - 5g-core-sim/                  # minimal destination server traffic is forwarded to
  - open5gs/, ueransim/           # simulated 5G core + radio/UE (outsourced, see below)
- - evidence/                     # AUTO-GENERATED at runtime — packets/, memory/, processes/, chain_of_custody.log
+ - evidence/                     # AUTO-GENERATED at runtime packets/, memory/, processes/, chain_of_custody.log
+ - experiments                  # Contains scripts + results for the experiments done on the dataset
  - model-training/               # offline: trains all 6 ONNX models from CICIoT2023 CSVs
    - training_models.py
  - evaluation/                   # AUTO-GENERATED at runtime + manual scoring
