@@ -1,0 +1,129 @@
+{
+  "generated_at": "2026-09-20T19:23:16.724303",
+  "experiment_1_latency": {
+    "runs": [
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 15.23,
+        "total_ms": 224.22
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 86.75,
+        "total_ms": 300.61
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 197.58,
+        "total_ms": 490.95
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 18.86,
+        "total_ms": 229.37
+      },
+      {
+        "flow_id": 477243884,
+        "attack_type": "DDoS",
+        "evidence_acquisition_ms": 202.99,
+        "total_ms": 416.47
+      },
+      {
+        "flow_id": 477243884,
+        "attack_type": "DDoS",
+        "evidence_acquisition_ms": 296.18,
+        "total_ms": 507.57
+      },
+      {
+        "flow_id": 477243884,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 7.76,
+        "total_ms": 214.56
+      },
+      {
+        "flow_id": 477243884,
+        "attack_type": "DDoS",
+        "evidence_acquisition_ms": 136.03,
+        "total_ms": 410.44
+      },
+      {
+        "flow_id": 477243884,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 8.15,
+        "total_ms": 217.58
+      },
+      {
+        "flow_id": 477243884,
+        "attack_type": "DDoS",
+        "evidence_acquisition_ms": 198.53,
+        "total_ms": 409.86
+      },
+      {
+        "flow_id": 477243884,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 6.74,
+        "total_ms": 211.64
+      },
+      {
+        "flow_id": 477243884,
+        "attack_type": "DDoS",
+        "evidence_acquisition_ms": 30.64,
+        "total_ms": 320.39
+      },
+      {
+        "flow_id": 477243884,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 6.94,
+        "total_ms": 211.81
+      },
+      {
+        "flow_id": null,
+        "attack_type": "DoS",
+        "evidence_acquisition_ms": 294.57,
+        "total_ms": 501.49
+      }
+    ],
+    "mean_ms": 333.35,
+    "median_ms": 310.5,
+    "min_ms": 211.64,
+    "max_ms": 507.57,
+    "stdev_ms": 118.72,
+    "pct_under_target": 85.7,
+    "target_ms": 500
+  },
+  "experiment_2_scenarios": [
+    {
+      "scenario": "Benign",
+      "windows": 195,
+      "correctly_left_benign": 164,
+      "false_positive_rate_pct": 15.9
+    },
+    {
+      "scenario": "DDoS",
+      "windows": 562,
+      "correctly_flagged": 534,
+      "detection_rate_pct": 95.0
+    }
+  ],
+  "experiment_3_completeness": {
+    "note": "No evidence/ subfolders found yet \u2014 run a replay with at least one attack first.",
+    "incidents": []
+  },
+  "experiment_6_forensic_bridge": {
+    "correctly_detected_attacks": 534,
+    "evidence_generated_pct": 0.0,
+    "custody_valid_pct": 0.0
+  },
+  "experiment_7_reliability": {
+    "attack_runs": 6,
+    "detected": 2,
+    "evidence_bundles_created": 0,
+    "detection_rate_pct": 33.3,
+    "evidence_success_rate_pct": 0.0,
+    "avg_acquisition_ms": 107.64
+  }
+}

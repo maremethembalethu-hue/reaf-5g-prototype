@@ -1,0 +1,14 @@
+{"flow_id": 4000900370, "attack_type": "Spoofing", "detection_ts": 1789911384.9602096, "evidence_start_ts": 1789911385.1691966, "evidence_complete_ts": 1789911385.1844287, "detection_to_evidence_ms": 15.23}
+{"flow_id": 4000900370, "attack_type": "Web", "detection_ts": 1789911400.353011, "evidence_start_ts": 1789911400.5668707, "evidence_complete_ts": 1789911400.6536179, "detection_to_evidence_ms": 86.75}
+{"flow_id": 4000900370, "attack_type": "Recon", "detection_ts": 1789911409.964621, "evidence_start_ts": 1789911410.257992, "evidence_complete_ts": 1789911410.4555736, "detection_to_evidence_ms": 197.58}
+{"flow_id": 4000900370, "attack_type": "Web", "detection_ts": 1789911433.1220307, "evidence_start_ts": 1789911433.3325408, "evidence_complete_ts": 1789911433.3514006, "detection_to_evidence_ms": 18.86}
+{"flow_id": 477243884, "attack_type": "DDoS", "detection_ts": 1789911441.957332, "evidence_start_ts": 1789911442.170812, "evidence_complete_ts": 1789911442.3737988, "detection_to_evidence_ms": 202.99}
+{"flow_id": 477243884, "attack_type": "DDoS", "detection_ts": 1789911474.3647504, "evidence_start_ts": 1789911474.5761425, "evidence_complete_ts": 1789911474.872324, "detection_to_evidence_ms": 296.18}
+{"flow_id": 477243884, "attack_type": "Recon", "detection_ts": 1789911479.6566463, "evidence_start_ts": 1789911479.8634484, "evidence_complete_ts": 1789911479.871209, "detection_to_evidence_ms": 7.76}
+{"flow_id": 477243884, "attack_type": "DDoS", "detection_ts": 1789911505.771041, "evidence_start_ts": 1789911506.0454533, "evidence_complete_ts": 1789911506.1814806, "detection_to_evidence_ms": 136.03}
+{"flow_id": 477243884, "attack_type": "Recon", "detection_ts": 1789911511.8549285, "evidence_start_ts": 1789911512.0643625, "evidence_complete_ts": 1789911512.0725083, "detection_to_evidence_ms": 8.15}
+{"flow_id": 477243884, "attack_type": "DDoS", "detection_ts": 1789911536.6516669, "evidence_start_ts": 1789911536.8629944, "evidence_complete_ts": 1789911537.0615227, "detection_to_evidence_ms": 198.53}
+{"flow_id": 477243884, "attack_type": "Recon", "detection_ts": 1789911549.6703248, "evidence_start_ts": 1789911549.8752258, "evidence_complete_ts": 1789911549.8819644, "detection_to_evidence_ms": 6.74}
+{"flow_id": 477243884, "attack_type": "DDoS", "detection_ts": 1789911566.8620222, "evidence_start_ts": 1789911567.1517656, "evidence_complete_ts": 1789911567.1824093, "detection_to_evidence_ms": 30.64}
+{"flow_id": 477243884, "attack_type": "Recon", "detection_ts": 1789911589.6501155, "evidence_start_ts": 1789911589.854988, "evidence_complete_ts": 1789911589.8619287, "detection_to_evidence_ms": 6.94}
+{"flow_id": null, "attack_type": "DoS", "detection_ts": 1789911594.4462833, "evidence_start_ts": 1789911594.653197, "evidence_complete_ts": 1789911594.9477706, "detection_to_evidence_ms": 294.57}

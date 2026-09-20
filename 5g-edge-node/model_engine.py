@@ -17,13 +17,14 @@ log = logging.getLogger(__name__)
 DEBUG_LOG_PATH = os.getenv("DEBUG_LOG_PATH", os.path.join(
     os.getenv("EVAL_DIR", "/evaluation"), "debug_predictions.jsonl"))
 MAX_DEBUG_RECORDS = int(os.getenv("MAX_DEBUG_RECORDS", "300"))
+UNLIMITED_DEBUG = MAX_DEBUG_RECORDS <= 0
 _debug_record_count = 0
 _debug_cap_notice_shown = False
  
  
 def _write_debug_record(record):
     global _debug_record_count, _debug_cap_notice_shown
-    if _debug_record_count >= MAX_DEBUG_RECORDS:
+    if not UNLIMITED_DEBUG and _debug_record_count >= MAX_DEBUG_RECORDS:
         if not _debug_cap_notice_shown:
             log.info(f"DEBUG: reached MAX_DEBUG_RECORDS={MAX_DEBUG_RECORDS}, "
                      f"no further records written to {DEBUG_LOG_PATH}")

@@ -1,0 +1,95 @@
+{
+  "experiment_4_integrity": [
+    {
+      "test": "A - original evidence",
+      "expected": "VALID",
+      "result": "VALID",
+      "pass": true
+    },
+    {
+      "test": "B - modify evidence file",
+      "expected": "INVALID",
+      "result": "SKIPPED",
+      "pass": null,
+      "note": "no pcap evidence files found to modify"
+    },
+    {
+      "test": "C - delete evidence file",
+      "expected": "INVALID",
+      "result": "SKIPPED",
+      "pass": null,
+      "note": "no pcap evidence files found to delete"
+    },
+    {
+      "test": "D - modify chain entry",
+      "expected": "INVALID",
+      "result": "INVALID",
+      "pass": true,
+      "broken_at_index": 8
+    }
+  ],
+  "experiment_5_chain_verification": {
+    "per_incident_before_tampering": [
+      {
+        "incident_index": 0,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 1,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 2,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 3,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 4,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 5,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 6,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 7,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 8,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 9,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 10,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 11,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 12,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 13,
+        "valid_up_to_here": true
+      }
+    ],
+    "tampered_incident_index": 7,
+    "chain_valid_after_tampering": false,
+    "first_broken_at": 8,
+    "demonstrates": "every incident from the tampered one onward should now fail verification"
+  }
+}

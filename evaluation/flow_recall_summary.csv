@@ -1,7 +1,7 @@
 replay_id,pcap_path,packets_read,packets_received,recall_pct
-1,pre-selected/replay_pcaps_contiguous/Benign_Final/BenignTraffic_contiguous_sample.pcap,5000,1930,38.6
+1,pre-selected/replay_pcaps_contiguous/Benign_Final/BenignTraffic_contiguous_sample.pcap,5000,1780,35.6
 2,pre-selected/replay_pcaps_contiguous/DDoS-ICMP_Flood/DDoS-ICMP_Flood_contiguous_sample.pcap,5000,4990,99.8
-3,pre-selected/replay_pcaps_contiguous/DDoS-TCP_Flood/DDoS-TCP_Flood_contiguous_sample.pcap,5000,270,5.4
+3,pre-selected/replay_pcaps_contiguous/DDoS-TCP_Flood/DDoS-TCP_Flood_contiguous_sample.pcap,5000,70,1.4
 4,pre-selected/replay_pcaps_contiguous/DDoS-UDP_Flood/DDoS-UDP_Flood_contiguous_sample.pcap,5000,0,0.0
 5,pre-selected/replay_pcaps_contiguous/Mirai-greip_flood/Mirai-greip_flood_contiguous_sample.pcap,5000,0,0.0
 6,pre-selected/replay_pcaps_contiguous/Mirai-udpplain/Mirai-udpplain_contiguous_sample.pcap,5000,0,0.0

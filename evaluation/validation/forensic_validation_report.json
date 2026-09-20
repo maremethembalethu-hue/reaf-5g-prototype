@@ -1,14 +1,11 @@
 {
   "chain_of_custody_valid": true,
   "chain_problems": [],
-  "n_evidence_bundles": 909,
+  "n_evidence_bundles": 14,
   "ground_truth_attack_types": [],
   "attack_types_with_evidence": [
-    "BruteForce",
     "DDoS",
     "DoS",
-    "Mirai",
-    "Mirai-greeth_flood",
     "Recon",
     "Spoofing",
     "Web"

@@ -45,7 +45,8 @@ UE_PREFIX    = ".".join(UE_SUBNET.split(".")[:3])
 REAF_PORT = int(os.getenv("REAF_PORT", "9999"))
  
 EVAL_DIR.mkdir(parents=True, exist_ok=True)
-ITEMS_LOG = EVAL_DIR / "items_log.jsonl"
+ITEMS_LOG = os.path.join(EVAL_DIR, "items_log.jsonl")
+TIMING_LOG = os.path.join(EVAL_DIR, "timing_log.jsonl") 
  
 window_builder_10 = WindowBuilder(window_size=10)
 window_builder_100 = WindowBuilder(window_size=100)
@@ -78,16 +79,28 @@ def _insufficient_data_result():
         "label": "[?? PARTIAL ]", "attack_type": "InsufficientData", "confidence": 0.0,
         "model_used": "none", "cpu_percent": 0.0, "ram_percent": 0.0, "pred_class": "InsufficientData",
     }
+
+def write_timing(flow_id, attack_type, detection_ts, evidence_start_ts, evidence_complete_ts):
+    # This is called from exactly the two places detection turns into evidence
+    # acquisition, never anywhere else, since that's the only point both timestamps exist.
+    record = {
+        "flow_id": flow_id, "attack_type": attack_type,
+        "detection_ts": detection_ts, "evidence_start_ts": evidence_start_ts,
+        "evidence_complete_ts": evidence_complete_ts,
+        "detection_to_evidence_ms": round((evidence_complete_ts - evidence_start_ts) * 1000, 2),
+    }
+    with open(TIMING_LOG, "a") as f:
+        f.write(json.dumps(record) + "\n")
+        f.flush()
  
 def handle_finished_flow(window, position=None):
     if window["packet_count"] != window_builder_10.window_size:
-        # Stale/shutdown partial window — not a genuine 10-packet sample,
-        # matches neither trained scale. Classifying it would just feed the
-        # model an off-distribution input it's never seen; log and skip.
+        # Stale/shutdown partial window not a genuine 10-packet sample,
+        # matches neither trained scale. 
         result = _insufficient_data_result()
         write_items(window, result, datetime.now(timezone.utc).isoformat())
         return
- 
+    detection_ts = time.time()  
     result = classify_flow(window, position=position)
     log_prediction(window, result)
  
@@ -101,19 +114,22 @@ def handle_finished_flow(window, position=None):
     )
     write_items(window, result, ts)
     if should_acquire(result["attack_type"], result["confidence"]):
+        evidence_start_ts = time.time()                      
         collect_evidence(window["packets"], result, ts)
+        evidence_complete_ts = time.time()                   
+        write_timing(window.get("flow_id"), result["attack_type"],
+                     detection_ts, evidence_start_ts, evidence_complete_ts)  
  
  
 def handle_finished_w100(window, position):
-    # w=100 windows never gate on their own — they only ever EXIST to
-    # override the w=10 stage2 answer for Flood/Mirai (see model_engine.
-    # register_w100_result). Still logged/acted on like a normal detection
-    # event so it's auditable, tagged distinctly via model_used.
+    # w=100 windows never gate on their own they only ever EXIST to
+    # override the w=10 stage2 answer for Flood/Mirai.
     if window["packet_count"] != window_builder_100.window_size:
         result = _insufficient_data_result()
         write_items(window, result, datetime.now(timezone.utc).isoformat())
         return
- 
+    
+    detection_ts = time.time()
     result = register_w100_result(window, position)
     log_prediction(window, result)
     ts = datetime.now(timezone.utc).isoformat()
@@ -126,7 +142,11 @@ def handle_finished_w100(window, position):
     )
     write_items(window, result, ts)
     if should_acquire(result["attack_type"], result["confidence"]):
+        evidence_start_ts = time.time()                     
         collect_evidence(window["packets"], result, ts)
+        evidence_complete_ts = time.time()                   
+        write_timing(window.get("flow_id"), result["attack_type"],
+                     detection_ts, evidence_start_ts, evidence_complete_ts)
  
 def process_original_packet(pkt):
     # DECAPSULATED original packet rather than directly on whatever
@@ -134,7 +154,7 @@ def process_original_packet(pkt):
  
     pkt = reassembler.feed(pkt, ts=time.time())
     if pkt is None:
-        return  # mid-train fragment, or an incomplete set — wait or drop
+        return  # mid-train fragment, or an incomplete set, wait or drop
     inspect_packet(pkt, "capture")
     ts = float(pkt.time)
  

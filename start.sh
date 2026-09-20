@@ -107,6 +107,15 @@ echo " results_builder.py (joined_results.csv), Computes the standard evaluation
 python3 results_builder.py
 echo "forensic_validation.py (verifies the evidence hash chain)"
 python3 forensic_validation.py
+echo "Experiment Codes..."
+
+echo "Testing experiment: 1,2,3,6 + 7. ...."
+python3 experiment_s.py
+echo "Testing experiment: 4 + 5. ...."
+python3 tamper_tests.py
+echo "Testing experiment: 8 + 9. ...."
+python3 resource_overhead.py
+
 cd "$SCRIPT_DIR"
  
 echo "Post-run evaluation complete see evaluation/joined_results.csv and the output above."

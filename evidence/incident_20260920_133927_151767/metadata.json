@@ -1,0 +1,14 @@
+{
+  "incident_id": "20260920_133927_151767",
+  "timestamp": "2026-09-20T13:39:27.151472+00:00",
+  "attack_type": "DDoS",
+  "confidence": 0.9128455519676208,
+  "model_used": "heavy_stage2_w100",
+  "ram_percent": 35.5,
+  "packet_count": 100,
+  "evidence_files": {
+    "network": "/evidence/incident_20260920_133927_151767/network_capture.pcap",
+    "processes": "/evidence/incident_20260920_133927_151767/processes.json",
+    "memory": "/evidence/incident_20260920_133927_151767/memory.json"
+  }
+}
