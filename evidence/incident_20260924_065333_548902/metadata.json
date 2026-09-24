@@ -1,0 +1,15 @@
+{
+  "incident_id": "20260924_065333_548902",
+  "timestamp": "2026-09-24T06:53:33.548567+00:00",
+  "attack_type": "DDoS",
+  "confidence": 0.9170082211494446,
+  "model_used": "heavy_stage2_w100_override",
+  "ram_percent": 34.0,
+  "packet_count": 10,
+  "evidence_files": {
+    "network": "/evidence/incident_20260924_065333_548902/network_capture.pcap",
+    "processes": "/evidence/incident_20260924_065333_548902/processes.json",
+    "memory": "/evidence/incident_20260924_065333_548902/memory.json",
+    "syslog": "/evidence/incident_20260924_065333_548902/syslog.txt"
+  }
+}

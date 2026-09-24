@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 EVIDENCE_DIR = os.getenv("EVIDENCE_DIR", "/evidence")
 
 
-def collect_evidence(packets, result: dict, timestamp: str):
+def collect_evidence(packets, result, timestamp):
     
     # Called when trigger.py fires.
     # Collects all four evidence layers and preserves them.
@@ -77,18 +77,17 @@ def collect_evidence(packets, result: dict, timestamp: str):
         log.error(f"  3/4 Memory capture failed: {e}")
 
     #  Layer 4: System logs 
+    from log_buffer import recent_log_handler
+ 
     syslog_path = os.path.join(bundle_dir, "syslog.txt")
     try:
-        result_proc = subprocess.run(
-            ["journalctl", "-n", "100", "--no-pager"],
-            capture_output=True, text=True
-        )
+        recent_lines = recent_log_handler.get_recent(100)
         with open(syslog_path, "w") as f:
-            f.write(result_proc.stdout or "No syslog available")
+            f.write("\n".join(recent_lines) if recent_lines else "No log entries captured yet")
         paths["syslog"] = syslog_path
-        log.info(f"  4/4 System layer saved: {syslog_path}")
+        log.info(f"  4/4 System layer saved: {syslog_path} ({len(recent_lines)} lines)")
     except Exception as e:
-        log.warning(f"  4/4 Syslog not available: {e}")
+        log.warning(f"  4/4 Syslog capture failed: {e}")
 
     #  Metadata file 
     meta = {
@@ -108,3 +107,5 @@ def collect_evidence(packets, result: dict, timestamp: str):
     #  Chain of custody
     preserve_bundle(bundle_dir, meta)
     log.info(f"EVIDENCE ACQUISITION COMPLETE | incident={incident_id}")
+    
+    return incident_id  

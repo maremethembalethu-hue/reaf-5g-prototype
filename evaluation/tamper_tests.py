@@ -36,21 +36,19 @@ def verify_chain(entries):
  
  
 def _make_scratch_copy():
-    scratch = Path(tempfile.mkdtemp(prefix="reaf5g_tamper_"))
+    scratch = Path(tempfile.mkdtemp(prefix="reaf-5g_prototype_"))
     shutil.copytree(EVIDENCE_DIR, scratch / "evidence")
     return scratch / "evidence"
- 
- 
 def test_a_original():
     entries = load_jsonl(EVIDENCE_DIR / CUSTODY_LOG_NAME)
     intact, broken_at = verify_chain(entries)
     return {"test": "A - original evidence", "expected": "VALID",
             "result": "VALID" if intact else "INVALID", "pass": intact}
  
- 
+
 def test_b_modify_evidence_file():
     scratch = _make_scratch_copy()
-    pcap_files = list((scratch / "packets").glob("*.pcap")) if (scratch / "packets").exists() else []
+    pcap_files = list(scratch.glob("incident_*/network_capture.pcap"))
     if not pcap_files:
         shutil.rmtree(scratch.parent)
         return {"test": "B - modify evidence file", "expected": "INVALID",
@@ -59,20 +57,18 @@ def test_b_modify_evidence_file():
     target = pcap_files[0]
     with open(target, "r+b") as f:
         f.seek(0)
-        f.write(b"\x00" * min(16, target.stat().st_size))  # corrupt the first bytes
+        f.write(b"\x00" * min(16, target.stat().st_size))
  
-  # If chain_of_custody.py exposes a per-file hash
-    # check, call it here instead of this placeholder note.
     shutil.rmtree(scratch.parent)
     return {"test": "B - modify evidence file", "expected": "INVALID", "result": "MANUAL_CHECK_NEEDED",
-            "pass": None, "note": "File content was corrupted at " + str(target.name) +
-                                    " re-run evidence-file hash check (not the chain-link "
-                                    "check) against this file to confirm it now reads INVALID."}
+            "pass": None, "note": f"File content was corrupted at {target.parent.name}/{target.name} — "
+                                    "re-run your evidence-file hash check (bundle_hash in chain_of_custody.py) "
+                                    "against this incident to confirm it now reads INVALID."}
  
  
 def test_c_delete_evidence_file():
     scratch = _make_scratch_copy()
-    pcap_files = list((scratch / "packets").glob("*.pcap")) if (scratch / "packets").exists() else []
+    pcap_files = list(scratch.glob("incident_*/network_capture.pcap"))
     if not pcap_files:
         shutil.rmtree(scratch.parent)
         return {"test": "C - delete evidence file", "expected": "INVALID",
@@ -83,8 +79,7 @@ def test_c_delete_evidence_file():
     shutil.rmtree(scratch.parent)
     return {"test": "C - delete evidence file", "expected": "INVALID",
             "result": "INVALID" if not still_exists else "VALID", "pass": not still_exists,
-            "note": f"deleted {deleted.name}; a completeness check (Experiment 3) should now flag this incident"}
- 
+            "note": f"deleted {deleted.parent.name}/{deleted.name}; a completeness check should now flag this incident"}
  
 def test_d_modify_chain_entry():
     entries = load_jsonl(EVIDENCE_DIR / CUSTODY_LOG_NAME)

@@ -1,0 +1,100 @@
+2026-09-24 06:57:12,933 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:12.933194+00:00 | window of 10 pkts over 24.89s |  attack=Web | conf=0.747 | model=heavy_stage2
+2026-09-24 06:57:13,237 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:13.237592+00:00 | window of 10 pkts over 5687.30s |  attack=Recon | conf=0.656 | model=heavy_stage2
+2026-09-24 06:57:13,537 INFO __main__: [UE-TUNNEL ] 2026-09-24T06:57:13.537505+00:00 | window of 10 pkts over 0.03s |  attack=Benign | conf=0.820 | model=heavy_stage1
+2026-09-24 06:57:13,753 INFO __main__: [UE-TUNNEL ] 2026-09-24T06:57:13.753125+00:00 | window of 10 pkts over 0.04s |  attack=Benign | conf=0.918 | model=heavy_stage1
+2026-09-24 06:57:14,028 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:14.028828+00:00 | window of 10 pkts over 0.02s |  attack=Recon | conf=0.655 | model=heavy_stage2
+2026-09-24 06:57:14,323 INFO __main__: [UE-TUNNEL ] 2026-09-24T06:57:14.323404+00:00 | window of 10 pkts over 0.04s |  attack=Benign | conf=0.743 | model=heavy_stage1
+2026-09-24 06:57:14,533 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:14.533276+00:00 | [w100] window of 100 pkts over 69106.71s |  attack=Web | conf=0.944 | model=heavy_stage2_w100
+2026-09-24 06:57:14,533 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:57:14,554 WARNING flow_builder: Window has 1/10 packets out of chronological order (flow_id=[1349499731, 3763489731]). Arrival-order span=-9150.087s, true chronological span=9150.140s. Window CLOSING is now based on true chronological span, so grouping should still be correct — this warning just quantifies how scrambled arrival order is.
+2026-09-24 06:57:14,824 INFO __main__: [UE-TUNNEL ] 2026-09-24T06:57:14.824103+00:00 | window of 10 pkts over -9150.09s |  attack=Benign | conf=0.871 | model=heavy_stage1
+2026-09-24 06:57:14,824 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:57:14,824 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:57:15,041 INFO __main__: [UE-TUNNEL ] 2026-09-24T06:57:15.041384+00:00 | window of 10 pkts over 0.31s |  attack=Benign | conf=0.878 | model=heavy_stage1
+2026-09-24 06:57:15,269 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:15.269372+00:00 | window of 10 pkts over 0.23s |  attack=Web | conf=0.692 | model=heavy_stage2
+2026-09-24 06:57:15,282 WARNING flow_builder: Window has 1/10 packets out of chronological order (flow_id=[3256857773, 3763489731]). Arrival-order span=-60255.919s, true chronological span=60256.056s. Window CLOSING is now based on true chronological span, so grouping should still be correct — this warning just quantifies how scrambled arrival order is.
+2026-09-24 06:57:15,488 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:15.488765+00:00 | window of 10 pkts over -60255.92s |  attack=Spoofing | conf=0.722 | model=heavy_stage2
+2026-09-24 06:57:15,489 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:57:15,489 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:57:15,721 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:15.721054+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.729 | model=heavy_stage2
+2026-09-24 06:57:16,025 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:16.025599+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.975 | model=heavy_stage2
+2026-09-24 06:57:16,026 INFO evidence_collect: EVIDENCE ACQUISITION STARTED | incident=20260924_065716_025800 | attack=Mirai
+2026-09-24 06:57:16,037 INFO evidence_collect:   1/4 Network layer saved: /evidence/incident_20260924_065716_025800/network_capture.pcap
+2026-09-24 06:57:16,125 INFO evidence_collect:   2/4 Process layer saved: /evidence/incident_20260924_065716_025800/processes.json (2 processes)
+2026-09-24 06:57:16,126 INFO evidence_collect:   3/4 Memory layer saved: /evidence/incident_20260924_065716_025800/memory.json
+2026-09-24 06:57:16,126 INFO evidence_collect:   4/4 System layer saved: /evidence/incident_20260924_065716_025800/syslog.txt (100 lines)
+2026-09-24 06:57:16,127 INFO chain_of_custody:   CoC entry written | hash=75477243c394e2f1... | prev=fa22b0c11d0a965f...
+2026-09-24 06:57:16,128 INFO evidence_collect: EVIDENCE ACQUISITION COMPLETE | incident=20260924_065716_025800
+2026-09-24 06:57:16,429 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:16.429470+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.977 | model=heavy_stage2
+2026-09-24 06:57:16,732 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:16.732922+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.981 | model=heavy_stage2
+2026-09-24 06:57:17,041 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:17.041266+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.980 | model=heavy_stage2
+2026-09-24 06:57:17,431 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:17.430973+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.981 | model=heavy_stage2
+2026-09-24 06:57:17,432 WARNING flow_builder: Window has 2/100 packets out of chronological order (flow_id=[1349499731, 3256857773, 3763489731]). Arrival-order span=-61713.391s, true chronological span=61713.409s. Window CLOSING is now based on true chronological span, so grouping should still be correct — this warning just quantifies how scrambled arrival order is.
+2026-09-24 06:57:17,638 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:17.638185+00:00 | [w100] window of 100 pkts over -61713.39s |  attack=Mirai | conf=0.978 | model=heavy_stage2_w100
+2026-09-24 06:57:17,638 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:57:17,929 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:17.929763+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.977 | model=heavy_stage2
+2026-09-24 06:57:18,244 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:18.240232+00:00 | window of 10 pkts over 0.01s |  attack=Spoofing | conf=0.822 | model=heavy_stage2
+2026-09-24 06:57:18,536 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:18.535983+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.979 | model=heavy_stage2
+2026-09-24 06:57:18,832 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:18.832108+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.848 | model=heavy_stage2
+2026-09-24 06:57:19,053 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:19.053720+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.979 | model=heavy_stage2
+2026-09-24 06:57:19,521 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:19.521098+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.980 | model=heavy_stage2
+2026-09-24 06:57:19,844 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:19.844187+00:00 | window of 10 pkts over 0.01s |  attack=Mirai | conf=0.962 | model=heavy_stage2
+2026-09-24 06:57:20,077 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:20.077841+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.981 | model=heavy_stage2
+2026-09-24 06:57:20,330 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:20.330368+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=0.981 | model=heavy_stage2
+2026-09-24 06:57:20,634 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:20.634236+00:00 | window of 10 pkts over 0.02s |  attack=Spoofing | conf=0.751 | model=heavy_stage2
+2026-09-24 06:57:20,839 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:20.839929+00:00 | [w100] window of 100 pkts over 0.04s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100
+2026-09-24 06:57:21,060 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:21.060640+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:21,321 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:21.321868+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:21,631 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:21.631420+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:21,929 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:21.929008+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:22,325 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:22.325870+00:00 | window of 10 pkts over 0.03s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:22,546 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:22.546253+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:22,833 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:22.833557+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:23,121 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:23.121179+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:23,342 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:23.342168+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:23,562 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:23.562059+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:23,824 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:23.824665+00:00 | [w100] window of 100 pkts over 0.05s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100
+2026-09-24 06:57:24,124 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:24.124580+00:00 | window of 10 pkts over 0.01s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:24,425 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:24.425808+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:24,726 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:24.726948+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:25,033 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:25.033003+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:25,333 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:25.333674+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:25,632 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:25.632542+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:25,854 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:25.854677+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:26,221 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:26.221218+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:26,543 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:26.543582+00:00 | window of 10 pkts over 0.00s |  attack=Mirai | conf=1.000 | model=heavy_stage2_w100_override
+2026-09-24 06:57:26,726 WARNING flow_builder: Window has 1/10 packets out of chronological order (flow_id=[1164324773, 3256857773]). Arrival-order span=-7393.454s, true chronological span=7393.455s. Window CLOSING is now based on true chronological span, so grouping should still be correct — this warning just quantifies how scrambled arrival order is.
+2026-09-24 06:57:26,945 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:26.945844+00:00 | window of 10 pkts over -7393.45s |  attack=Spoofing | conf=0.687 | model=heavy_stage2
+2026-09-24 06:57:26,949 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:57:26,950 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:57:26,952 WARNING flow_builder: Window has 1/100 packets out of chronological order (flow_id=[1164324773, 3256857773]). Arrival-order span=-7393.434s, true chronological span=7393.455s. Window CLOSING is now based on true chronological span, so grouping should still be correct — this warning just quantifies how scrambled arrival order is.
+2026-09-24 06:57:27,224 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:27.224390+00:00 | [w100] window of 100 pkts over -7393.43s |  attack=Mirai | conf=0.989 | model=heavy_stage2_w100
+2026-09-24 06:57:27,224 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:57:27,529 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:27.529836+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.928 | model=heavy_stage2
+2026-09-24 06:57:27,531 INFO evidence_collect: EVIDENCE ACQUISITION STARTED | incident=20260924_065727_530069 | attack=Spoofing
+2026-09-24 06:57:27,538 INFO evidence_collect:   1/4 Network layer saved: /evidence/incident_20260924_065727_530069/network_capture.pcap
+2026-09-24 06:57:27,540 INFO evidence_collect:   2/4 Process layer saved: /evidence/incident_20260924_065727_530069/processes.json (2 processes)
+2026-09-24 06:57:27,619 INFO evidence_collect:   3/4 Memory layer saved: /evidence/incident_20260924_065727_530069/memory.json
+2026-09-24 06:57:27,619 INFO evidence_collect:   4/4 System layer saved: /evidence/incident_20260924_065727_530069/syslog.txt (100 lines)
+2026-09-24 06:57:27,621 INFO chain_of_custody:   CoC entry written | hash=f3e50f1395b45968... | prev=75477243c394e2f1...
+2026-09-24 06:57:27,621 INFO evidence_collect: EVIDENCE ACQUISITION COMPLETE | incident=20260924_065727_530069
+2026-09-24 06:57:27,941 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:27.941757+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.570 | model=heavy_stage2
+2026-09-24 06:57:28,237 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:28.237497+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.583 | model=heavy_stage2
+2026-09-24 06:57:28,477 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:28.477910+00:00 | window of 10 pkts over 0.01s |  attack=Spoofing | conf=0.805 | model=heavy_stage2
+2026-09-24 06:57:28,732 INFO __main__: [UE-TUNNEL ] 2026-09-24T06:57:28.732791+00:00 | window of 10 pkts over 0.06s |  attack=Benign | conf=0.854 | model=heavy_stage1
+2026-09-24 06:57:29,045 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:29.045604+00:00 | window of 10 pkts over 0.01s |  attack=Spoofing | conf=0.698 | model=heavy_stage2
+2026-09-24 06:57:29,343 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:29.343309+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.902 | model=heavy_stage2
+2026-09-24 06:57:29,645 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:29.645590+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.759 | model=heavy_stage2
+2026-09-24 06:57:30,026 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:30.026349+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.894 | model=heavy_stage2
+2026-09-24 06:57:30,345 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:30.345754+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.893 | model=heavy_stage2
+2026-09-24 06:57:30,624 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:30.624068+00:00 | [w100] window of 100 pkts over 0.10s |  attack=Web | conf=0.559 | model=heavy_stage2_w100
+2026-09-24 06:57:30,849 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:30.849776+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.917 | model=heavy_stage2
+2026-09-24 06:57:31,333 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:31.333044+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.845 | model=heavy_stage2
+2026-09-24 06:57:31,718 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:31.718073+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.922 | model=heavy_stage2
+2026-09-24 06:57:31,936 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:31.936088+00:00 | window of 10 pkts over 0.00s |  attack=Spoofing | conf=0.922 | model=heavy_stage2
+2026-09-24 06:57:32,229 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:32.229025+00:00 | window of 10 pkts over 75888.93s |  attack=Web | conf=0.468 | model=heavy_stage2
+2026-09-24 06:57:32,523 INFO __main__: [!! ATTACK ] 2026-09-24T06:57:32.523235+00:00 | window of 10 pkts over 0.13s |  attack=Recon | conf=0.987 | model=heavy_stage2
+2026-09-24 06:57:32,524 INFO evidence_collect: EVIDENCE ACQUISITION STARTED | incident=20260924_065732_523594 | attack=Recon
+2026-09-24 06:57:32,529 INFO evidence_collect:   1/4 Network layer saved: /evidence/incident_20260924_065732_523594/network_capture.pcap
+2026-09-24 06:57:32,530 INFO evidence_collect:   2/4 Process layer saved: /evidence/incident_20260924_065732_523594/processes.json (2 processes)
+2026-09-24 06:57:32,531 INFO evidence_collect:   3/4 Memory layer saved: /evidence/incident_20260924_065732_523594/memory.json

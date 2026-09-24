@@ -1,0 +1,15 @@
+{
+  "incident_id": "20260924_065656_851682",
+  "timestamp": "2026-09-24T06:56:56.851340+00:00",
+  "attack_type": "DoS",
+  "confidence": 0.9556251764297485,
+  "model_used": "heavy_stage2_w100",
+  "ram_percent": 34.0,
+  "packet_count": 100,
+  "evidence_files": {
+    "network": "/evidence/incident_20260924_065656_851682/network_capture.pcap",
+    "processes": "/evidence/incident_20260924_065656_851682/processes.json",
+    "memory": "/evidence/incident_20260924_065656_851682/memory.json",
+    "syslog": "/evidence/incident_20260924_065656_851682/syslog.txt"
+  }
+}

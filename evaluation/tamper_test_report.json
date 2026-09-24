@@ -9,23 +9,23 @@
     {
       "test": "B - modify evidence file",
       "expected": "INVALID",
-      "result": "SKIPPED",
+      "result": "MANUAL_CHECK_NEEDED",
       "pass": null,
-      "note": "no pcap evidence files found to modify"
+      "note": "File content was corrupted at incident_20260924_065712_467768/network_capture.pcap \u2014 re-run your evidence-file hash check (bundle_hash in chain_of_custody.py) against this incident to confirm it now reads INVALID."
     },
     {
       "test": "C - delete evidence file",
       "expected": "INVALID",
-      "result": "SKIPPED",
-      "pass": null,
-      "note": "no pcap evidence files found to delete"
+      "result": "INVALID",
+      "pass": true,
+      "note": "deleted incident_20260924_065712_467768/network_capture.pcap; a completeness check should now flag this incident"
     },
     {
       "test": "D - modify chain entry",
       "expected": "INVALID",
       "result": "INVALID",
       "pass": true,
-      "broken_at_index": 8
+      "broken_at_index": 13
     }
   ],
   "experiment_5_chain_verification": {
@@ -85,11 +85,55 @@
       {
         "incident_index": 13,
         "valid_up_to_here": true
+      },
+      {
+        "incident_index": 14,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 15,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 16,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 17,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 18,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 19,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 20,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 21,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 22,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 23,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 24,
+        "valid_up_to_here": true
       }
     ],
-    "tampered_incident_index": 7,
+    "tampered_incident_index": 12,
     "chain_valid_after_tampering": false,
-    "first_broken_at": 8,
+    "first_broken_at": 13,
     "demonstrates": "every incident from the tampered one onward should now fail verification"
   }
 }

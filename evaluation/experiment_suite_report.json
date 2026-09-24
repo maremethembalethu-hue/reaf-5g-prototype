@@ -1,129 +1,465 @@
 {
-  "generated_at": "2026-09-20T19:23:16.724303",
+  "generated_at": "2026-09-24T08:59:33.655868",
   "experiment_1_latency": {
     "runs": [
       {
         "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 11.31,
+        "total_ms": 217.91
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 97.62,
+        "total_ms": 304.97
+      },
+      {
+        "flow_id": 4000900370,
         "attack_type": "Spoofing",
-        "evidence_acquisition_ms": 15.23,
-        "total_ms": 224.22
+        "evidence_acquisition_ms": 32.07,
+        "total_ms": 243.99
       },
       {
         "flow_id": 4000900370,
         "attack_type": "Web",
-        "evidence_acquisition_ms": 86.75,
-        "total_ms": 300.61
-      },
-      {
-        "flow_id": 4000900370,
-        "attack_type": "Recon",
-        "evidence_acquisition_ms": 197.58,
-        "total_ms": 490.95
-      },
-      {
-        "flow_id": 4000900370,
-        "attack_type": "Web",
-        "evidence_acquisition_ms": 18.86,
-        "total_ms": 229.37
+        "evidence_acquisition_ms": 5.44,
+        "total_ms": 215.68
       },
       {
         "flow_id": 477243884,
         "attack_type": "DDoS",
-        "evidence_acquisition_ms": 202.99,
-        "total_ms": 416.47
-      },
-      {
-        "flow_id": 477243884,
-        "attack_type": "DDoS",
-        "evidence_acquisition_ms": 296.18,
-        "total_ms": 507.57
+        "evidence_acquisition_ms": 30.42,
+        "total_ms": 311.08
       },
       {
         "flow_id": 477243884,
         "attack_type": "Recon",
-        "evidence_acquisition_ms": 7.76,
-        "total_ms": 214.56
+        "evidence_acquisition_ms": 10.03,
+        "total_ms": 218.93
       },
       {
         "flow_id": 477243884,
         "attack_type": "DDoS",
-        "evidence_acquisition_ms": 136.03,
-        "total_ms": 410.44
-      },
-      {
-        "flow_id": 477243884,
-        "attack_type": "Recon",
-        "evidence_acquisition_ms": 8.15,
-        "total_ms": 217.58
+        "evidence_acquisition_ms": 10.18,
+        "total_ms": 216.8
       },
       {
         "flow_id": 477243884,
         "attack_type": "DDoS",
-        "evidence_acquisition_ms": 198.53,
-        "total_ms": 409.86
+        "evidence_acquisition_ms": 86.34,
+        "total_ms": 297.96
       },
       {
         "flow_id": 477243884,
         "attack_type": "Recon",
-        "evidence_acquisition_ms": 6.74,
-        "total_ms": 211.64
+        "evidence_acquisition_ms": 8.54,
+        "total_ms": 214.76
       },
       {
         "flow_id": 477243884,
         "attack_type": "DDoS",
-        "evidence_acquisition_ms": 30.64,
-        "total_ms": 320.39
+        "evidence_acquisition_ms": 96.18,
+        "total_ms": 361.16
       },
       {
         "flow_id": 477243884,
-        "attack_type": "Recon",
-        "evidence_acquisition_ms": 6.94,
-        "total_ms": 211.81
+        "attack_type": "DDoS",
+        "evidence_acquisition_ms": 9.16,
+        "total_ms": 299.97
       },
       {
         "flow_id": null,
         "attack_type": "DoS",
-        "evidence_acquisition_ms": 294.57,
-        "total_ms": 501.49
+        "evidence_acquisition_ms": 206.66,
+        "total_ms": 469.06
+      },
+      {
+        "flow_id": 3819750367,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 10.72,
+        "total_ms": 292.28
+      },
+      {
+        "flow_id": 3819750367,
+        "attack_type": "DoS",
+        "evidence_acquisition_ms": 184.7,
+        "total_ms": 391.52
+      },
+      {
+        "flow_id": 1349499731,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 8.07,
+        "total_ms": 214.17
+      },
+      {
+        "flow_id": 3256857773,
+        "attack_type": "Mirai",
+        "evidence_acquisition_ms": 102.43,
+        "total_ms": 308.07
+      },
+      {
+        "flow_id": 1164324773,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 91.61,
+        "total_ms": 302.18
+      },
+      {
+        "flow_id": 1164324773,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 9.88,
+        "total_ms": 291.02
+      },
+      {
+        "flow_id": 1351419100,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 5.35,
+        "total_ms": 211.71
+      },
+      {
+        "flow_id": 1351419100,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 10.68,
+        "total_ms": 216.34
+      },
+      {
+        "flow_id": 1351419100,
+        "attack_type": "BruteForce",
+        "evidence_acquisition_ms": 7.45,
+        "total_ms": 212.89
+      },
+      {
+        "flow_id": 1351419100,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 10.64,
+        "total_ms": 217.87
+      },
+      {
+        "flow_id": 1351419100,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 84.53,
+        "total_ms": 294.29
+      },
+      {
+        "flow_id": 1351419100,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 8.5,
+        "total_ms": 215.39
+      },
+      {
+        "flow_id": 1351419100,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 7.22,
+        "total_ms": 212.61
       }
     ],
-    "mean_ms": 333.35,
-    "median_ms": 310.5,
-    "min_ms": 211.64,
-    "max_ms": 507.57,
-    "stdev_ms": 118.72,
-    "pct_under_target": 85.7,
+    "mean_ms": 270.1,
+    "median_ms": 243.99,
+    "min_ms": 211.71,
+    "max_ms": 469.06,
+    "stdev_ms": 67.02,
+    "pct_under_target": 100.0,
     "target_ms": 500
   },
   "experiment_2_scenarios": [
     {
       "scenario": "Benign",
-      "windows": 195,
-      "correctly_left_benign": 164,
-      "false_positive_rate_pct": 15.9
+      "windows": 394,
+      "correctly_left_benign": 328,
+      "false_positive_rate_pct": 16.8
     },
     {
       "scenario": "DDoS",
-      "windows": 562,
-      "correctly_flagged": 534,
-      "detection_rate_pct": 95.0
+      "windows": 1783,
+      "correctly_flagged": 1624,
+      "detection_rate_pct": 91.1
+    },
+    {
+      "scenario": "Mirai",
+      "windows": 72,
+      "correctly_flagged": 64,
+      "detection_rate_pct": 88.9
+    },
+    {
+      "scenario": "Recon",
+      "windows": 927,
+      "correctly_flagged": 352,
+      "detection_rate_pct": 38.0
+    },
+    {
+      "scenario": "Spoofing",
+      "windows": 20,
+      "correctly_flagged": 0,
+      "detection_rate_pct": 0.0
     }
   ],
   "experiment_3_completeness": {
-    "note": "No evidence/ subfolders found yet \u2014 run a replay with at least one attack first.",
-    "incidents": []
+    "incidents": [
+      {
+        "incident": "20260924_065210_557341",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065219_162950",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065221_367915",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065256_692990",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065303_446812",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065319_351089",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065333_548902",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065403_651374",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065429_341202",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065433_837375",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065503_935276",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065526_840970",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065654_324681",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065656_851682",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065712_467768",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065716_025800",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065727_530069",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065732_523594",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065802_724963",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065817_829614",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065819_623533",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065834_223745",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065838_530147",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065908_463242",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260924_065917_315125",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      }
+    ],
+    "overall_completeness_pct": 100.0
   },
-  "experiment_6_forensic_bridge": {
-    "correctly_detected_attacks": 534,
-    "evidence_generated_pct": 0.0,
-    "custody_valid_pct": 0.0
+  "experiment_6_burst_level": {
+    "cooldown_seconds_used": 30.0,
+    "total_bursts": 6,
+    "bursts_with_at_least_one_incident": 4,
+    "burst_level_evidence_pct": 66.7,
+    "note": "cooldown_seconds_used must match trigger.py's real cooldown value -- set TRIGGER_COOLDOWN_SECONDS if the default (5.0s) is wrong for this deployment."
   },
   "experiment_7_reliability": {
-    "attack_runs": 6,
-    "detected": 2,
-    "evidence_bundles_created": 0,
-    "detection_rate_pct": 33.3,
-    "evidence_success_rate_pct": 0.0,
-    "avg_acquisition_ms": 107.64
+    "attack_runs": 9,
+    "detected": 6,
+    "detection_rate_pct": 66.7,
+    "evidence_success_rate_pct": 100.0,
+    "avg_acquisition_ms": 45.83
   }
 }

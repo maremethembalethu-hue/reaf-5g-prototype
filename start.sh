@@ -55,14 +55,21 @@ docker rm -f reaf-traffic 2>/dev/null || true
 docker rm -f 5g-edge-node 2>/dev/null || true
 docker rm -f dashboard 2>/dev/null || true
 
-
-
+echo "Clearing Evidence from previous runs..."
+sudo rm -rf "$SCRIPT_DIR/evidence"
 echo "Clearing evaluation logs from previous runs..."
-rm -f "$SCRIPT_DIR/evaluation/items_log.jsonl" \
-      "$SCRIPT_DIR/evaluation/truth_log.jsonl" \
-      "$SCRIPT_DIR/evaluation/debug_predictions.jsonl" \
-      "$SCRIPT_DIR/evaluation/predictions_log.jsonl"
-
+sudo rm -rf \
+        "$SCRIPT_DIR/evaluation/items_log.jsonl" \
+        "$SCRIPT_DIR/evaluation/truth_log.jsonl" \
+        "$SCRIPT_DIR/evaluation/debug_predictions.jsonl" \
+        "$SCRIPT_DIR/evaluation/predictions_log.jsonl" \
+        "$SCRIPT_DIR/evaluation/experiment_suite_report.json" \
+        "$SCRIPT_DIR/evaluation/resource_report.json" \
+        "$SCRIPT_DIR/evaluation/timing_log.jsonl" \
+        "$SCRIPT_DIR/evaluation/tamper_test_report.json" \
+        "$SCRIPT_DIR/evaluation/flow_recall_summary.csv" \
+        "$SCRIPT_DIR/evaluation/joined_results.csv" \
+        "$SCRIPT_DIR/evaluation/validation"
 sleep 10
 
 # echo " Samples a fixed number of *complete* flows from a source PCAP... "
@@ -106,7 +113,7 @@ python3 truth_results.py
 echo " results_builder.py (joined_results.csv), Computes the standard evaluation metrics: confusion matrix, accuracy, per-class precision/recall/F1. "
 python3 results_builder.py
 echo "forensic_validation.py (verifies the evidence hash chain)"
-python3 forensic_validation.py
+sudo python3 forensic_validation.py
 echo "Experiment Codes..."
 
 echo "Testing experiment: 1,2,3,6 + 7. ...."

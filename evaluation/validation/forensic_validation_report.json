@@ -1,14 +1,41 @@
 {
   "chain_of_custody_valid": true,
   "chain_problems": [],
-  "n_evidence_bundles": 14,
-  "ground_truth_attack_types": [],
+  "n_evidence_bundles": 25,
+  "truth_log_path": "/home/mareme/reaf-5g-prototype/evaluation/truth_log.jsonl",
+  "joined_results_path": "/home/mareme/reaf-5g-prototype/evaluation/joined_results.csv",
+  "n_truth_records": 20,
+  "ground_truth_comparison_ran": true,
+  "ground_truth_attack_types": [
+    "DDoS",
+    "Mirai",
+    "Recon",
+    "Spoofing"
+  ],
+  "n_joined_result_records": 3192,
+  "attack_types_in_joined_results": [
+    "Benign",
+    "DDoS",
+    "Mirai",
+    "Recon",
+    "Spoofing"
+  ],
+  "ground_truth_attack_types_present_in_results": [
+    "DDoS",
+    "Mirai",
+    "Recon",
+    "Spoofing"
+  ],
+  "ground_truth_attack_types_missing_from_results": [],
   "attack_types_with_evidence": [
+    "BruteForce",
     "DDoS",
     "DoS",
+    "Mirai",
     "Recon",
     "Spoofing",
     "Web"
   ],
-  "attack_types_never_triggered_evidence": []
+  "attack_types_never_triggered_evidence": [],
+  "validation_problems": []
 }

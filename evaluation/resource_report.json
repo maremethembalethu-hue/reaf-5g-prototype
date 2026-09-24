@@ -1,9 +1,9 @@
 {
   "detection_only": {
     "n_samples": 300,
-    "cpu_mean": 12.1,
-    "cpu_max": 61.7,
-    "ram_mean": 35.5,
-    "ram_max": 35.6
+    "cpu_mean": 11.1,
+    "cpu_max": 56.4,
+    "ram_mean": 33.7,
+    "ram_max": 33.9
   }
 }

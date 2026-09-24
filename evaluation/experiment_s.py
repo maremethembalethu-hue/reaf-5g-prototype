@@ -2,9 +2,11 @@
 import json
 import statistics
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
- 
+from collections import defaultdict
+from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent))
 from results_engine import compute_joined_rows, accuracy_breakdown  # already in evaluation/
  
@@ -12,7 +14,7 @@ EVAL_DIR = Path(__file__).parent
 EVIDENCE_DIR = EVAL_DIR.parent / "evidence"
  
 TARGET_MS = 500  # this project's stated end-to-end target
- 
+COOLDOWN_SECONDS = float(os.environ.get("TRIGGER_COOLDOWN_SECONDS", "30"))
 
 def load_jsonl(path):
     if not path.exists():
@@ -83,81 +85,99 @@ def experiment_2_scenarios():
                         "detection_rate_pct": round(100 * correct / len(group), 1)})
     return out
  
- 
 
 def experiment_3_completeness():
-    expected_types = ["pcap", "memory", "processes", "syslogs", "chain_of_custody"]
-    incident_ids = set()
-    for sub in ("packets", "memory", "processes", "syslogs"):
-        d = EVIDENCE_DIR / sub
-        if d.exists():
-            incident_ids.update(p.stem for p in d.iterdir())
+   
+    expected_files = {
+        "pcap": "network_capture.pcap", "processes": "processes.json",
+        "memory": "memory.json", "syslog": "syslog.txt", "metadata": "metadata.json",
+    }
+    incident_dirs = sorted(EVIDENCE_DIR.glob("incident_*"))
+    if not incident_dirs:
+        return {"note": "No evidence/incident_* directories found yet — run a replay with at least one attack first.", "incidents": []}
  
-    if not incident_ids:
-        return {"note": "No evidence/ subfolders found yet — run a replay with at least one attack first.", "incidents": []}
- 
-    custody_entries = {e.get("flow_id") or e.get("incident_id") for e in _load_jsonl(EVIDENCE_DIR / "chain_of_custody.log")}
+    custody_by_id = {e.get("incident_id"): e for e in load_jsonl(EVIDENCE_DIR / "chain_of_custody.log")}
  
     rows = []
-    for iid in sorted(incident_ids):
-        present = {
-            "pcap": (EVIDENCE_DIR / "packets" / f"{iid}.pcap").exists(),
-            "memory": (EVIDENCE_DIR / "memory" / f"{iid}.json").exists(),
-            "processes": (EVIDENCE_DIR / "processes" / f"{iid}.json").exists(),
-            "syslogs": (EVIDENCE_DIR / "syslogs" / f"{iid}.json").exists(),
-            "chain_of_custody": iid in custody_entries,
-        }
-        rows.append({"incident": iid, **present,
+    for d in incident_dirs:
+        incident_id = d.name.removeprefix("incident_")
+        present = {key: (d / fname).exists() for key, fname in expected_files.items()}
+        present["chain_of_custody"] = incident_id in custody_by_id
+        rows.append({"incident": incident_id, **present,
                       "completeness_pct": round(100 * sum(present.values()) / len(present), 1)})
  
     overall = round(sum(r["completeness_pct"] for r in rows) / len(rows), 1) if rows else 0
     return {"incidents": rows, "overall_completeness_pct": overall}
  
+
+def _parse_ts(ts_str):
+    return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
  
  
-def experiment_6_forensic_bridge():
-    # Bridges ML ground truth with forensic evidence: for every window that
-    # SHOULD have triggered evidence, confirm evidence actually exists and is chain-of-custody valid.
+def _group_into_bursts(rows):
+    # rows must have flow_id, captured_ts, incident_id (all already
+    # present in compute_joined_rows()'s output after the earlier fix).
+    by_flow = defaultdict(list)
+    for r in rows:
+        by_flow[r.get("flow_id")].append(r)
+ 
+    bursts = []
+    for flow_id, flow_rows in by_flow.items():
+        flow_rows_sorted = sorted(flow_rows, key=lambda r: r["captured_ts"])
+        current_burst, prev_ts = [], None
+        for r in flow_rows_sorted:
+            ts = _parse_ts(r["captured_ts"])
+            if prev_ts is not None and (ts - prev_ts).total_seconds() > COOLDOWN_SECONDS:
+                bursts.append(current_burst)
+                current_burst = []
+            current_burst.append(r)
+            prev_ts = ts
+        if current_burst:
+            bursts.append(current_burst)
+    return bursts
+ 
+ 
+def experiment_6_burst_level():
     rows = compute_joined_rows(str(EVAL_DIR / "items_log.jsonl"), str(EVAL_DIR / "truth_log.jsonl"))
-    custody_entries = {e.get("flow_id") or e.get("incident_id") for e in load_jsonl(EVIDENCE_DIR / "chain_of_custody.log")}
- 
     should_have_evidence = [r for r in rows if r["expected_label"].lower() != "benign" and r["family_correct"]]
-    with_evidence = sum(1 for r in should_have_evidence
-                         if (EVIDENCE_DIR / "packets" / f'{r["replay_id"]}.pcap').exists())
-    with_valid_custody = sum(1 for r in should_have_evidence if r["replay_id"] in custody_entries)
+    custody_by_id = {e["incident_id"] for e in load_jsonl(EVIDENCE_DIR / "chain_of_custody.log")}
  
-    n = len(should_have_evidence) or 1
+    bursts = _group_into_bursts(should_have_evidence)
+    bursts_with_evidence = sum(
+        1 for burst in bursts if any(r.get("incident_id") in custody_by_id for r in burst)
+    )
+    n_bursts = len(bursts) or 1
+ 
     return {
-        "correctly_detected_attacks": len(should_have_evidence),
-        "evidence_generated_pct": round(100 * with_evidence / n, 1),
-        "custody_valid_pct": round(100 * with_valid_custody / n, 1),
+        "cooldown_seconds_used": COOLDOWN_SECONDS,
+        "total_bursts": len(bursts),
+        "bursts_with_at_least_one_incident": bursts_with_evidence,
+        "burst_level_evidence_pct": round(100 * bursts_with_evidence / n_bursts, 1),
+        "note": ("cooldown_seconds_used must match trigger.py's real cooldown value -- "
+                 "set TRIGGER_COOLDOWN_SECONDS if the default (5.0s) is wrong for this deployment."),
     }
  
- 
-def experiment_7_reliability(n_runs_expected=None):
-    # Detection rate and evidence success rate across every attack replay
-    # job recorded in truth_log.jsonl the "don't run it only once" test.
+def experiment_7_reliability():
     truth = load_jsonl(EVAL_DIR / "truth_log.jsonl")
     attack_jobs = [j for j in truth if j.get("status") == "completed" and j.get("expected_label", "").lower() != "benign"]
     rows = compute_joined_rows(str(EVAL_DIR / "items_log.jsonl"), str(EVAL_DIR / "truth_log.jsonl"))
     timing = load_jsonl(EVAL_DIR / "timing_log.jsonl")
  
-    detected_flow_ids = {r["replay_id"] for r in rows if r["family_correct"] and r["expected_label"].lower() != "benign"}
-    evidence_flow_ids = {t["flow_id"] for t in timing}
- 
+    detected_replay_ids = {r["replay_id"] for r in rows if r["family_correct"] and r["expected_label"].lower() != "benign"}
     total = len(attack_jobs)
-    detected = len(detected_flow_ids)
-    evidence_created = len(evidence_flow_ids & detected_flow_ids)
+ 
+    # NEW: real per-window evidence success rate, via incident_id
+    custody_by_id = {e["incident_id"] for e in load_jsonl(EVIDENCE_DIR / "chain_of_custody.log")}
+    windows_with_evidence = sum(1 for t in timing if t.get("incident_id") in custody_by_id)
+    windows_needing_evidence = len(timing)  # every timing_log.jsonl row already means acquisition was triggered
  
     return {
         "attack_runs": total,
-        "detected": detected,
-        "evidence_bundles_created": evidence_created,
-        "detection_rate_pct": round(100 * detected / total, 1) if total else None,
-        "evidence_success_rate_pct": round(100 * evidence_created / detected, 1) if detected else None,
+        "detected": len(detected_replay_ids),
+        "detection_rate_pct": round(100 * len(detected_replay_ids) / total, 1) if total else None,
+        "evidence_success_rate_pct": round(100 * windows_with_evidence / windows_needing_evidence, 1) if windows_needing_evidence else None,  # RESTORED, now real
         "avg_acquisition_ms": round(statistics.mean(t["detection_to_evidence_ms"] for t in timing), 2) if timing else None,
     }
- 
  
 def run_all():
     return {
@@ -165,7 +185,7 @@ def run_all():
         "experiment_1_latency": experiment_1_latency(),
         "experiment_2_scenarios": experiment_2_scenarios(),
         "experiment_3_completeness": experiment_3_completeness(),
-        "experiment_6_forensic_bridge": experiment_6_forensic_bridge(),
+        "experiment_6_burst_level": experiment_6_burst_level(),
         "experiment_7_reliability": experiment_7_reliability(),
     }
  

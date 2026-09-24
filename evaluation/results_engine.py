@@ -67,6 +67,8 @@ def compute_joined_rows(predictions_path, truth_path):
             "packet_count": pred.get("packet_count"),
             "mixed_flow": pred.get("mixed_flow", False),
             "captured_ts": pred.get("captured_ts"),
+            "incident_id": pred.get("incident_id"), # ADDED
+            "flow_id": flow_id,
         })
     return rows
 

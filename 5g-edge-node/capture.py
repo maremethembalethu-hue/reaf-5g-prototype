@@ -20,12 +20,14 @@ from pkt_debug import inspect_packet
 from envelope_ressemble import EnvelopeReassembler
 from flow_builder import WindowBuilder
 sys.stdout.reconfigure(line_buffering=True)
- 
+from log_buffer import recent_log_handler
+
 import logging as _log
 _log.getLogger("scapy.runtime").setLevel(_log.ERROR)
 _log.getLogger("scapy.interactive").setLevel(_log.ERROR)
 _log.getLogger("scapy.loading").setLevel(_log.ERROR)
  
+
  
 _LINKTYPE_DECODERS = {1: Ether, 101: IP, 228: IP, 229: IPv6}  
 # Logging
@@ -35,6 +37,9 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
     stream=sys.stdout
 )
+
+
+logging.getLogger().addHandler(recent_log_handler)
 log = logging.getLogger(__name__)
  
 # Config
@@ -54,7 +59,7 @@ _total_packets_processed = 0
 reassembler = FragmentReassembler()
 envelope_reassembler = EnvelopeReassembler()
  
-def write_items(window, result, captured_ts):
+def write_items(window, result, captured_ts, incident_id=None):
   
     record = {
         "captured_ts": captured_ts,
@@ -65,6 +70,7 @@ def write_items(window, result, captured_ts):
         "predicted_label": result["attack_type"],
         "confidence": result["confidence"],
         "model_used": result["model_used"],
+        "incident_id": incident_id,
     }
     with open(ITEMS_LOG, "a") as f:
         f.write(json.dumps(record) + "\n")
@@ -80,11 +86,11 @@ def _insufficient_data_result():
         "model_used": "none", "cpu_percent": 0.0, "ram_percent": 0.0, "pred_class": "InsufficientData",
     }
 
-def write_timing(flow_id, attack_type, detection_ts, evidence_start_ts, evidence_complete_ts):
+def write_timing(flow_id, attack_type, detection_ts, evidence_start_ts, evidence_complete_ts, incident_id):
     # This is called from exactly the two places detection turns into evidence
     # acquisition, never anywhere else, since that's the only point both timestamps exist.
     record = {
-        "flow_id": flow_id, "attack_type": attack_type,
+        "flow_id": flow_id, "attack_type": attack_type, "incident_id": incident_id,
         "detection_ts": detection_ts, "evidence_start_ts": evidence_start_ts,
         "evidence_complete_ts": evidence_complete_ts,
         "detection_to_evidence_ms": round((evidence_complete_ts - evidence_start_ts) * 1000, 2),
@@ -105,6 +111,7 @@ def handle_finished_flow(window, position=None):
     log_prediction(window, result)
  
     ts = datetime.now(timezone.utc).isoformat()
+    
     n_pkts = window["packet_count"]
     duration = window["last_time"] - window["start_time"]
     log.info(
@@ -113,12 +120,15 @@ def handle_finished_flow(window, position=None):
         f"conf={result['confidence']:.3f} | model={result['model_used']}"
     )
     write_items(window, result, ts)
+    incident_id = None
     if should_acquire(result["attack_type"], result["confidence"]):
         evidence_start_ts = time.time()                      
-        collect_evidence(window["packets"], result, ts)
+        incident_id = collect_evidence(window["packets"], result, ts)
         evidence_complete_ts = time.time()                   
         write_timing(window.get("flow_id"), result["attack_type"],
-                     detection_ts, evidence_start_ts, evidence_complete_ts)  
+                     detection_ts, evidence_start_ts, evidence_complete_ts, incident_id)  
+    
+    write_items(window, result, ts, incident_id)
  
  
 def handle_finished_w100(window, position):
@@ -143,10 +153,10 @@ def handle_finished_w100(window, position):
     write_items(window, result, ts)
     if should_acquire(result["attack_type"], result["confidence"]):
         evidence_start_ts = time.time()                     
-        collect_evidence(window["packets"], result, ts)
+        incident_id = collect_evidence(window["packets"], result, ts)
         evidence_complete_ts = time.time()                   
         write_timing(window.get("flow_id"), result["attack_type"],
-                     detection_ts, evidence_start_ts, evidence_complete_ts)
+                     detection_ts, evidence_start_ts, evidence_complete_ts, incident_id)
  
 def process_original_packet(pkt):
     # DECAPSULATED original packet rather than directly on whatever

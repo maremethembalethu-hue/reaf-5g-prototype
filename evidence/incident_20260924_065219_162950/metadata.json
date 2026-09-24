@@ -1,0 +1,15 @@
+{
+  "incident_id": "20260924_065219_162950",
+  "timestamp": "2026-09-24T06:52:19.162596+00:00",
+  "attack_type": "Web",
+  "confidence": 0.805232048034668,
+  "model_used": "heavy_stage2_w100",
+  "ram_percent": 33.7,
+  "packet_count": 100,
+  "evidence_files": {
+    "network": "/evidence/incident_20260924_065219_162950/network_capture.pcap",
+    "processes": "/evidence/incident_20260924_065219_162950/processes.json",
+    "memory": "/evidence/incident_20260924_065219_162950/memory.json",
+    "syslog": "/evidence/incident_20260924_065219_162950/syslog.txt"
+  }
+}

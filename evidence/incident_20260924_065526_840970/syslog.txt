@@ -1,0 +1,100 @@
+2026-09-24 06:55:03,545 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:03.545814+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.918 | model=heavy_stage2_w100_override
+2026-09-24 06:55:03,934 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:03.934859+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.918 | model=heavy_stage2_w100_override
+2026-09-24 06:55:03,936 INFO evidence_collect: EVIDENCE ACQUISITION STARTED | incident=20260924_065503_935276 | attack=DDoS
+2026-09-24 06:55:03,941 INFO evidence_collect:   1/4 Network layer saved: /evidence/incident_20260924_065503_935276/network_capture.pcap
+2026-09-24 06:55:03,942 INFO evidence_collect:   2/4 Process layer saved: /evidence/incident_20260924_065503_935276/processes.json (2 processes)
+2026-09-24 06:55:03,943 INFO evidence_collect:   3/4 Memory layer saved: /evidence/incident_20260924_065503_935276/memory.json
+2026-09-24 06:55:03,943 INFO evidence_collect:   4/4 System layer saved: /evidence/incident_20260924_065503_935276/syslog.txt (100 lines)
+2026-09-24 06:55:03,944 INFO chain_of_custody:   CoC entry written | hash=0db7b89798550707... | prev=bd844ca21caf1ac4...
+2026-09-24 06:55:03,944 INFO evidence_collect: EVIDENCE ACQUISITION COMPLETE | incident=20260924_065503_935276
+2026-09-24 06:55:04,246 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:04.246576+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.918 | model=heavy_stage2_w100_override
+2026-09-24 06:55:04,542 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:04.542957+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.918 | model=heavy_stage2_w100_override
+2026-09-24 06:55:04,845 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:04.845869+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.918 | model=heavy_stage2_w100_override
+2026-09-24 06:55:05,154 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:05.154112+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.918 | model=heavy_stage2_w100_override
+2026-09-24 06:55:05,438 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:05.438401+00:00 | [w100] window of 100 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100
+2026-09-24 06:55:05,741 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:05.741893+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100_override
+2026-09-24 06:55:06,051 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:06.051718+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100_override
+2026-09-24 06:55:06,341 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:06.341687+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100_override
+2026-09-24 06:55:06,563 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:06.563095+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100_override
+2026-09-24 06:55:06,855 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:06.855350+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100_override
+2026-09-24 06:55:07,135 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:07.135509+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100_override
+2026-09-24 06:55:07,440 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:07.439942+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100_override
+2026-09-24 06:55:07,743 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:07.743794+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100_override
+2026-09-24 06:55:08,041 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:08.041324+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100_override
+2026-09-24 06:55:08,337 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:08.337105+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.925 | model=heavy_stage2_w100_override
+2026-09-24 06:55:08,544 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:08.544195+00:00 | [w100] window of 100 pkts over 0.01s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100
+2026-09-24 06:55:08,832 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:08.832467+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100_override
+2026-09-24 06:55:09,059 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:09.058959+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100_override
+2026-09-24 06:55:09,336 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:09.336687+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100_override
+2026-09-24 06:55:09,655 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:09.655675+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100_override
+2026-09-24 06:55:09,946 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:09.946843+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100_override
+2026-09-24 06:55:10,243 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:10.243661+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100_override
+2026-09-24 06:55:10,459 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:10.459208+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100_override
+2026-09-24 06:55:10,828 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:10.828141+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100_override
+2026-09-24 06:55:11,046 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:11.046211+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100_override
+2026-09-24 06:55:11,259 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:11.259923+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.927 | model=heavy_stage2_w100_override
+2026-09-24 06:55:11,467 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:11.467085+00:00 | [w100] window of 100 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100
+2026-09-24 06:55:11,738 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:11.738444+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100_override
+2026-09-24 06:55:12,035 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:12.035930+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100_override
+2026-09-24 06:55:12,253 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:12.253453+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100_override
+2026-09-24 06:55:12,534 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:12.534715+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100_override
+2026-09-24 06:55:12,754 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:12.754758+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100_override
+2026-09-24 06:55:13,030 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:13.030604+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100_override
+2026-09-24 06:55:13,331 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:13.331288+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100_override
+2026-09-24 06:55:13,560 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:13.560004+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100_override
+2026-09-24 06:55:13,832 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:13.832038+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100_override
+2026-09-24 06:55:14,050 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:14.050799+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.934 | model=heavy_stage2_w100_override
+2026-09-24 06:55:14,335 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:14.334985+00:00 | [w100] window of 100 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100
+2026-09-24 06:55:14,639 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:14.639625+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100_override
+2026-09-24 06:55:14,940 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:14.940510+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100_override
+2026-09-24 06:55:15,241 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:15.241409+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100_override
+2026-09-24 06:55:15,541 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:15.541655+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100_override
+2026-09-24 06:55:15,834 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:15.834901+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100_override
+2026-09-24 06:55:16,054 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:16.053957+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100_override
+2026-09-24 06:55:16,339 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:16.339642+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100_override
+2026-09-24 06:55:16,640 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:16.640727+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100_override
+2026-09-24 06:55:16,862 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:16.862836+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100_override
+2026-09-24 06:55:17,141 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:17.141337+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.941 | model=heavy_stage2_w100_override
+2026-09-24 06:55:17,429 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:17.429433+00:00 | [w100] window of 100 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100
+2026-09-24 06:55:17,744 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:17.744026+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100_override
+2026-09-24 06:55:18,049 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:18.049568+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100_override
+2026-09-24 06:55:18,541 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:18.541845+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100_override
+2026-09-24 06:55:18,846 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:18.845899+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100_override
+2026-09-24 06:55:19,141 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:19.141243+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100_override
+2026-09-24 06:55:19,379 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:19.379682+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100_override
+2026-09-24 06:55:19,759 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:19.759762+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100_override
+2026-09-24 06:55:20,141 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:20.141230+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100_override
+2026-09-24 06:55:20,441 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:20.441400+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100_override
+2026-09-24 06:55:20,729 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:20.729263+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.928 | model=heavy_stage2_w100_override
+2026-09-24 06:55:20,938 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:20.938664+00:00 | [w100] window of 100 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100
+2026-09-24 06:55:21,231 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:21.231673+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100_override
+2026-09-24 06:55:21,453 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:21.453345+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100_override
+2026-09-24 06:55:21,671 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:21.671187+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100_override
+2026-09-24 06:55:21,941 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:21.941889+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100_override
+2026-09-24 06:55:22,240 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:22.240735+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100_override
+2026-09-24 06:55:22,629 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:22.629348+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100_override
+2026-09-24 06:55:22,855 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:22.855746+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100_override
+2026-09-24 06:55:23,143 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:23.143227+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100_override
+2026-09-24 06:55:23,437 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:23.437724+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100_override
+2026-09-24 06:55:23,741 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:23.741782+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.914 | model=heavy_stage2_w100_override
+2026-09-24 06:55:23,948 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:23.948812+00:00 | [w100] window of 100 pkts over 0.00s |  attack=DDoS | conf=0.935 | model=heavy_stage2_w100
+2026-09-24 06:55:24,237 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:24.237297+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.935 | model=heavy_stage2_w100_override
+2026-09-24 06:55:24,449 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:24.449877+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.935 | model=heavy_stage2_w100_override
+2026-09-24 06:55:24,664 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:24.664558+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.935 | model=heavy_stage2_w100_override
+2026-09-24 06:55:24,936 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:24.936707+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.935 | model=heavy_stage2_w100_override
+2026-09-24 06:55:25,154 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:25.154636+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.935 | model=heavy_stage2_w100_override
+2026-09-24 06:55:25,442 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:25.442116+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.935 | model=heavy_stage2_w100_override
+2026-09-24 06:55:25,742 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:25.742818+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.935 | model=heavy_stage2_w100_override
+2026-09-24 06:55:26,041 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:26.041051+00:00 | window of 10 pkts over 0.00s |  attack=DDoS | conf=0.935 | model=heavy_stage2_w100_override
+2026-09-24 06:55:26,137 WARNING flow_builder: Window has 1/10 packets out of chronological order (flow_id=[477243884, 1145533059]). Arrival-order span=-61.820s, true chronological span=61.820s. Window CLOSING is now based on true chronological span, so grouping should still be correct — this warning just quantifies how scrambled arrival order is.
+2026-09-24 06:55:26,343 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:26.343477+00:00 | window of 10 pkts over -61.82s |  attack=Recon | conf=0.458 | model=heavy_stage2
+2026-09-24 06:55:26,344 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:55:26,344 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:55:26,567 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:26.567878+00:00 | window of 10 pkts over 0.00s |  attack=Recon | conf=0.555 | model=heavy_stage2
+2026-09-24 06:55:26,578 WARNING flow_builder: Window has 1/100 packets out of chronological order (flow_id=[477243884, 1145533059]). Arrival-order span=-61.812s, true chronological span=61.820s. Window CLOSING is now based on true chronological span, so grouping should still be correct — this warning just quantifies how scrambled arrival order is.
+2026-09-24 06:55:26,840 INFO __main__: [!! ATTACK ] 2026-09-24T06:55:26.840429+00:00 | [w100] window of 100 pkts over -61.81s |  attack=DoS | conf=0.931 | model=heavy_stage2_w100
+2026-09-24 06:55:26,840 WARNING __main__: Window straddled more than one flow_id 
+2026-09-24 06:55:26,842 INFO evidence_collect: EVIDENCE ACQUISITION STARTED | incident=20260924_065526_840970 | attack=DoS
+2026-09-24 06:55:27,042 INFO evidence_collect:   1/4 Network layer saved: /evidence/incident_20260924_065526_840970/network_capture.pcap
+2026-09-24 06:55:27,044 INFO evidence_collect:   2/4 Process layer saved: /evidence/incident_20260924_065526_840970/processes.json (2 processes)
+2026-09-24 06:55:27,045 INFO evidence_collect:   3/4 Memory layer saved: /evidence/incident_20260924_065526_840970/memory.json

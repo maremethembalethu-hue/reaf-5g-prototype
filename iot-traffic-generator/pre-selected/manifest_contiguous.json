@@ -62,6 +62,36 @@
     },
     {
       "replay_id": 5,
+      "pcap_path": "pre-selected/replay_pcaps_contiguous/DNS_Spoofing/DNS_Spoofing_contiguous_sample.pcap",
+      "expected_label": "DNS_Spoofing",
+      "num_packets": 5000,
+      "recommended_replay_params": {
+        "suggested_idle_timeout": 0.5,
+        "suggested_replay_speed": 1.0,
+        "suggested_max_delay": 0.2,
+        "basis_gap_percentile": 99.0,
+        "basis_gap_percentile_value": 0.1387,
+        "max_gap_seconds": 61726.6805,
+        "negative_gap_count": 0
+      }
+    },
+    {
+      "replay_id": 6,
+      "pcap_path": "pre-selected/replay_pcaps_contiguous/MITM-ArpSpoofing/MITM-ArpSpoofing_contiguous_sample.pcap",
+      "expected_label": "MITM-ArpSpoofing",
+      "num_packets": 5000,
+      "recommended_replay_params": {
+        "suggested_idle_timeout": 0.5,
+        "suggested_replay_speed": 1.0,
+        "suggested_max_delay": 0.2,
+        "basis_gap_percentile": 99.0,
+        "basis_gap_percentile_value": 0.1339,
+        "max_gap_seconds": 59895.1634,
+        "negative_gap_count": 0
+      }
+    },
+    {
+      "replay_id": 7,
       "pcap_path": "pre-selected/replay_pcaps_contiguous/Mirai-greip_flood/Mirai-greip_flood_contiguous_sample.pcap",
       "expected_label": "Mirai-greip_flood",
       "num_packets": 5000,
@@ -76,7 +106,7 @@
       }
     },
     {
-      "replay_id": 6,
+      "replay_id": 8,
       "pcap_path": "pre-selected/replay_pcaps_contiguous/Mirai-udpplain/Mirai-udpplain_contiguous_sample.pcap",
       "expected_label": "Mirai-udpplain",
       "num_packets": 5000,
@@ -91,7 +121,7 @@
       }
     },
     {
-      "replay_id": 7,
+      "replay_id": 9,
       "pcap_path": "pre-selected/replay_pcaps_contiguous/Recon-PortScan/Recon-PortScan_contiguous_sample.pcap",
       "expected_label": "Recon-PortScan",
       "num_packets": 5000,
@@ -102,6 +132,21 @@
         "basis_gap_percentile": 99.0,
         "basis_gap_percentile_value": 0.1065,
         "max_gap_seconds": 73768.0092,
+        "negative_gap_count": 0
+      }
+    },
+    {
+      "replay_id": 10,
+      "pcap_path": "pre-selected/replay_pcaps_contiguous/VulnerabilityScan/VulnerabilityScan_contiguous_sample.pcap",
+      "expected_label": "VulnerabilityScan",
+      "num_packets": 5000,
+      "recommended_replay_params": {
+        "suggested_idle_timeout": 0.5,
+        "suggested_replay_speed": 1.0,
+        "suggested_max_delay": 0.2,
+        "basis_gap_percentile": 99.0,
+        "basis_gap_percentile_value": 0.1261,
+        "max_gap_seconds": 9213.4456,
         "negative_gap_count": 0
       }
     }
