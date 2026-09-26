@@ -119,7 +119,7 @@ def handle_finished_flow(window, position=None):
         f" attack={result['attack_type']} | "
         f"conf={result['confidence']:.3f} | model={result['model_used']}"
     )
-    write_items(window, result, ts)
+    
     incident_id = None
     if should_acquire(result["attack_type"], result["confidence"]):
         evidence_start_ts = time.time()                      
@@ -150,14 +150,14 @@ def handle_finished_w100(window, position):
         f" attack={result['attack_type']} | "
         f"conf={result['confidence']:.3f} | model={result['model_used']}"
     )
-    write_items(window, result, ts)
+    incident_id = None
     if should_acquire(result["attack_type"], result["confidence"]):
         evidence_start_ts = time.time()                     
         incident_id = collect_evidence(window["packets"], result, ts)
         evidence_complete_ts = time.time()                   
-        write_timing(window.get("flow_id"), result["attack_type"],
-                     detection_ts, evidence_start_ts, evidence_complete_ts, incident_id)
- 
+        write_timing(window.get("flow_id"), result["attack_type"],detection_ts, evidence_start_ts, evidence_complete_ts, incident_id)
+    write_items(window, result, ts, incident_id)
+    
 def process_original_packet(pkt):
     # DECAPSULATED original packet rather than directly on whatever
     global _total_packets_processed

@@ -69,7 +69,9 @@ sudo rm -rf \
         "$SCRIPT_DIR/evaluation/tamper_test_report.json" \
         "$SCRIPT_DIR/evaluation/flow_recall_summary.csv" \
         "$SCRIPT_DIR/evaluation/joined_results.csv" \
-        "$SCRIPT_DIR/evaluation/validation"
+        "$SCRIPT_DIR/evaluation/validation" \
+        "$SCRIPT_DIR/edge_logs.txt" \
+        "$SCRIPT_DIR/traffic_logs.txt"
 sleep 10
 
 # echo " Samples a fixed number of *complete* flows from a source PCAP... "
@@ -99,6 +101,9 @@ echo " docker logs -f 5g-edge-node"
 echo " docker logs -f reaf-traffic"
 
 
+echo "Writing the log to a .txt files"
+docker logs -f 5g-edge-node > edge_logs.txt 2>&1 &
+docker logs -f reaf-traffic > traffic_logs.txt 2>&1 &
 # Post-replay evaluation, runs automatically once the traffic generator's
 # replay job actually finishes.
 
@@ -106,7 +111,6 @@ echo ""
 echo "Waiting for the traffic-generator replay (reaf-traffic) to finish..."
 docker wait reaf-traffic >/dev/null 2>&1
 echo "Replay finished, running post-run evaluation..."
- 
 cd "$SCRIPT_DIR/evaluation"
 echo " truth_results.py (joins items_log.jsonl + truth_log.jsonl to joined_results.csv)"
 python3 truth_results.py

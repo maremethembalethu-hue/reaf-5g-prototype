@@ -114,18 +114,17 @@ def _parse_ts(ts_str):
     return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
  
  
+ 
 def _group_into_bursts(rows):
-    # rows must have flow_id, captured_ts, incident_id (all already
-    # present in compute_joined_rows()'s output after the earlier fix).
-    by_flow = defaultdict(list)
+    by_type = defaultdict(list)
     for r in rows:
-        by_flow[r.get("flow_id")].append(r)
+        by_type[r.get("predicted_label")].append(r)   # CHANGED: was r.get("flow_id")
  
     bursts = []
-    for flow_id, flow_rows in by_flow.items():
-        flow_rows_sorted = sorted(flow_rows, key=lambda r: r["captured_ts"])
+    for attack_type, type_rows in by_type.items():
+        type_rows_sorted = sorted(type_rows, key=lambda r: r["captured_ts"])
         current_burst, prev_ts = [], None
-        for r in flow_rows_sorted:
+        for r in type_rows_sorted:
             ts = _parse_ts(r["captured_ts"])
             if prev_ts is not None and (ts - prev_ts).total_seconds() > COOLDOWN_SECONDS:
                 bursts.append(current_burst)
