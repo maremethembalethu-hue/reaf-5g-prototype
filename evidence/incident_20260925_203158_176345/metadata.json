@@ -1,0 +1,15 @@
+{
+  "incident_id": "20260925_203158_176345",
+  "timestamp": "2026-09-25T20:31:58.171930+00:00",
+  "attack_type": "Spoofing",
+  "confidence": 0.9223088026046753,
+  "model_used": "heavy_stage2",
+  "ram_percent": 32.9,
+  "packet_count": 10,
+  "evidence_files": {
+    "network": "/evidence/incident_20260925_203158_176345/network_capture.pcap",
+    "processes": "/evidence/incident_20260925_203158_176345/processes.json",
+    "memory": "/evidence/incident_20260925_203158_176345/memory.json",
+    "syslog": "/evidence/incident_20260925_203158_176345/syslog.txt"
+  }
+}

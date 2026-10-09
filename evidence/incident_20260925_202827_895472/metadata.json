@@ -1,0 +1,15 @@
+{
+  "incident_id": "20260925_202827_895472",
+  "timestamp": "2026-09-25T20:28:27.895189+00:00",
+  "attack_type": "Recon",
+  "confidence": 0.8327635526657104,
+  "model_used": "heavy_stage2",
+  "ram_percent": 32.7,
+  "packet_count": 10,
+  "evidence_files": {
+    "network": "/evidence/incident_20260925_202827_895472/network_capture.pcap",
+    "processes": "/evidence/incident_20260925_202827_895472/processes.json",
+    "memory": "/evidence/incident_20260925_202827_895472/memory.json",
+    "syslog": "/evidence/incident_20260925_202827_895472/syslog.txt"
+  }
+}

@@ -1,0 +1,100 @@
+2026-09-25 20:33:29,047 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:29.047747+00:00 | window of 10 pkts over 0.42s |  attack=Web | conf=0.481 | model=heavy_stage2
+2026-09-25 20:33:29,260 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:29.259985+00:00 | window of 10 pkts over 0.09s |  attack=Benign | conf=0.710 | model=heavy_stage1
+2026-09-25 20:33:29,475 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:29.475323+00:00 | window of 10 pkts over 0.09s |  attack=Benign | conf=0.925 | model=heavy_stage1
+2026-09-25 20:33:29,765 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:29.765030+00:00 | window of 10 pkts over 0.05s |  attack=Benign | conf=0.859 | model=heavy_stage1
+2026-09-25 20:33:30,045 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:30.045426+00:00 | window of 10 pkts over 0.03s |  attack=Benign | conf=0.936 | model=heavy_stage1
+2026-09-25 20:33:30,256 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:30.256494+00:00 | [w100] window of 100 pkts over 119.63s |  attack=Recon | conf=0.554 | model=heavy_stage2_w100
+2026-09-25 20:33:30,477 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:30.477861+00:00 | window of 10 pkts over 0.02s |  attack=Recon | conf=0.942 | model=heavy_stage2
+2026-09-25 20:33:30,697 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:30.697156+00:00 | window of 10 pkts over 0.04s |  attack=Benign | conf=0.691 | model=heavy_stage1
+2026-09-25 20:33:30,913 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:30.913088+00:00 | window of 10 pkts over 0.10s |  attack=Benign | conf=0.932 | model=heavy_stage1
+2026-09-25 20:33:31,127 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:31.127067+00:00 | window of 10 pkts over 0.02s |  attack=Benign | conf=0.539 | model=heavy_stage1
+2026-09-25 20:33:31,342 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:31.342454+00:00 | window of 10 pkts over 0.08s |  attack=Benign | conf=0.879 | model=heavy_stage1
+2026-09-25 20:33:31,557 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:31.557010+00:00 | window of 10 pkts over 0.01s |  attack=Benign | conf=0.810 | model=heavy_stage1
+2026-09-25 20:33:31,855 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:31.855565+00:00 | window of 10 pkts over 0.08s |  attack=Benign | conf=0.824 | model=heavy_stage1
+2026-09-25 20:33:32,159 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:32.158981+00:00 | window of 10 pkts over 0.17s |  attack=Benign | conf=0.878 | model=heavy_stage1
+2026-09-25 20:33:32,376 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:32.376736+00:00 | window of 10 pkts over 0.05s |  attack=Benign | conf=0.958 | model=heavy_stage1
+2026-09-25 20:33:32,592 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:32.592660+00:00 | window of 10 pkts over 0.19s |  attack=Benign | conf=0.931 | model=heavy_stage1
+2026-09-25 20:33:32,799 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:32.799218+00:00 | [w100] window of 100 pkts over 0.80s |  attack=Recon | conf=0.970 | model=heavy_stage2_w100
+2026-09-25 20:33:33,053 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:33.053328+00:00 | window of 10 pkts over 0.16s |  attack=Benign | conf=0.913 | model=heavy_stage1
+2026-09-25 20:33:33,279 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:33.279464+00:00 | window of 10 pkts over 0.36s |  attack=Recon | conf=0.431 | model=heavy_stage2
+2026-09-25 20:33:33,542 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:33.542719+00:00 | window of 10 pkts over 0.18s |  attack=Web | conf=0.567 | model=heavy_stage2
+2026-09-25 20:33:33,760 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:33.760914+00:00 | window of 10 pkts over 0.06s |  attack=Benign | conf=0.611 | model=heavy_stage1
+2026-09-25 20:33:33,981 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:33.981163+00:00 | window of 10 pkts over 0.11s |  attack=Recon | conf=0.615 | model=heavy_stage2
+2026-09-25 20:33:34,253 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:34.253477+00:00 | window of 10 pkts over 0.06s |  attack=Recon | conf=0.576 | model=heavy_stage2
+2026-09-25 20:33:34,551 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:34.550981+00:00 | window of 10 pkts over 0.10s |  attack=Benign | conf=0.554 | model=heavy_stage1
+2026-09-25 20:33:34,858 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:34.858559+00:00 | window of 10 pkts over 0.11s |  attack=Recon | conf=0.376 | model=heavy_stage2
+2026-09-25 20:33:35,153 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:35.153700+00:00 | window of 10 pkts over 0.12s |  attack=Recon | conf=0.777 | model=heavy_stage2
+2026-09-25 20:33:35,459 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:35.459798+00:00 | window of 10 pkts over 0.13s |  attack=Benign | conf=0.714 | model=heavy_stage1
+2026-09-25 20:33:35,752 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:35.752380+00:00 | [w100] window of 100 pkts over 1.49s |  attack=Recon | conf=0.567 | model=heavy_stage2_w100
+2026-09-25 20:33:36,056 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:36.056141+00:00 | window of 10 pkts over 0.20s |  attack=Web | conf=0.727 | model=heavy_stage2
+2026-09-25 20:33:36,346 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:36.346639+00:00 | window of 10 pkts over 0.51s |  attack=Recon | conf=0.667 | model=heavy_stage2
+2026-09-25 20:33:36,569 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:36.569604+00:00 | window of 10 pkts over 0.25s |  attack=Benign | conf=0.521 | model=heavy_stage1
+2026-09-25 20:33:36,786 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:36.786181+00:00 | window of 10 pkts over 0.05s |  attack=Benign | conf=0.681 | model=heavy_stage1
+2026-09-25 20:33:37,051 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:37.051788+00:00 | window of 10 pkts over 0.16s |  attack=Benign | conf=0.907 | model=heavy_stage1
+2026-09-25 20:33:37,355 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:37.355076+00:00 | window of 10 pkts over 0.08s |  attack=Benign | conf=0.682 | model=heavy_stage1
+2026-09-25 20:33:37,575 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:37.575440+00:00 | window of 10 pkts over 0.13s |  attack=Benign | conf=0.583 | model=heavy_stage1
+2026-09-25 20:33:37,788 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:37.788130+00:00 | window of 10 pkts over 0.19s |  attack=Web | conf=0.586 | model=heavy_stage2
+2026-09-25 20:33:38,007 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:38.007664+00:00 | window of 10 pkts over 0.26s |  attack=Web | conf=0.839 | model=heavy_stage2
+2026-09-25 20:33:38,226 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:38.226928+00:00 | window of 10 pkts over 0.27s |  attack=Web | conf=0.605 | model=heavy_stage2
+2026-09-25 20:33:38,456 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:38.456354+00:00 | [w100] window of 100 pkts over 2.29s |  attack=Web | conf=0.754 | model=heavy_stage2_w100
+2026-09-25 20:33:38,755 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:38.755888+00:00 | window of 10 pkts over 0.12s |  attack=Benign | conf=0.723 | model=heavy_stage1
+2026-09-25 20:33:38,984 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:38.984878+00:00 | window of 10 pkts over 0.17s |  attack=Recon | conf=0.594 | model=heavy_stage2
+2026-09-25 20:33:39,259 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:39.259802+00:00 | window of 10 pkts over 0.28s |  attack=Benign | conf=0.528 | model=heavy_stage1
+2026-09-25 20:33:39,547 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:39.547421+00:00 | window of 10 pkts over 0.14s |  attack=Web | conf=0.439 | model=heavy_stage2
+2026-09-25 20:33:39,848 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:39.848560+00:00 | window of 10 pkts over 0.16s |  attack=Spoofing | conf=0.477 | model=heavy_stage2
+2026-09-25 20:33:40,067 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:40.067577+00:00 | window of 10 pkts over 0.11s |  attack=Benign | conf=0.672 | model=heavy_stage1
+2026-09-25 20:33:40,283 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:40.282998+00:00 | window of 10 pkts over 0.04s |  attack=Spoofing | conf=0.712 | model=heavy_stage2
+2026-09-25 20:33:40,495 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:40.495338+00:00 | window of 10 pkts over 0.06s |  attack=Benign | conf=0.769 | model=heavy_stage1
+2026-09-25 20:33:40,764 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:40.764240+00:00 | window of 10 pkts over 0.30s |  attack=Web | conf=0.473 | model=heavy_stage2
+2026-09-25 20:33:40,984 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:40.984731+00:00 | window of 10 pkts over 0.15s |  attack=Recon | conf=0.587 | model=heavy_stage2
+2026-09-25 20:33:41,191 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:41.191832+00:00 | [w100] window of 100 pkts over 1.70s |  attack=Recon | conf=0.812 | model=heavy_stage2_w100
+2026-09-25 20:33:41,461 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:41.461209+00:00 | window of 10 pkts over 1.54s |  attack=Web | conf=0.881 | model=heavy_stage2
+2026-09-25 20:33:41,753 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:41.753224+00:00 | window of 10 pkts over 0.17s |  attack=Web | conf=0.593 | model=heavy_stage2
+2026-09-25 20:33:42,061 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:42.061129+00:00 | window of 10 pkts over 0.13s |  attack=Recon | conf=0.511 | model=heavy_stage2
+2026-09-25 20:33:42,358 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:42.358355+00:00 | window of 10 pkts over 5.61s |  attack=Web | conf=0.502 | model=heavy_stage2
+2026-09-25 20:33:42,646 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:42.645961+00:00 | window of 10 pkts over 0.07s |  attack=Spoofing | conf=0.443 | model=heavy_stage2
+2026-09-25 20:33:42,952 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:42.952708+00:00 | window of 10 pkts over 0.18s |  attack=Recon | conf=0.512 | model=heavy_stage2
+2026-09-25 20:33:43,250 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:43.249974+00:00 | window of 10 pkts over 0.25s |  attack=Recon | conf=0.879 | model=heavy_stage2
+2026-09-25 20:33:43,652 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:43.652581+00:00 | window of 10 pkts over 0.12s |  attack=Benign | conf=0.864 | model=heavy_stage1
+2026-09-25 20:33:43,955 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:43.955830+00:00 | window of 10 pkts over 0.29s |  attack=Benign | conf=0.758 | model=heavy_stage1
+2026-09-25 20:33:44,175 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:44.175531+00:00 | window of 10 pkts over 0.45s |  attack=Benign | conf=0.646 | model=heavy_stage1
+2026-09-25 20:33:44,388 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:44.388262+00:00 | [w100] window of 100 pkts over 8.86s |  attack=Web | conf=0.555 | model=heavy_stage2_w100
+2026-09-25 20:33:44,665 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:44.665027+00:00 | window of 10 pkts over 0.23s |  attack=Recon | conf=0.593 | model=heavy_stage2
+2026-09-25 20:33:44,963 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:44.963308+00:00 | window of 10 pkts over 0.07s |  attack=Recon | conf=0.579 | model=heavy_stage2
+2026-09-25 20:33:45,176 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:45.176841+00:00 | window of 10 pkts over 0.13s |  attack=Benign | conf=0.571 | model=heavy_stage1
+2026-09-25 20:33:45,394 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:45.393976+00:00 | window of 10 pkts over 0.02s |  attack=Recon | conf=0.490 | model=heavy_stage2
+2026-09-25 20:33:45,653 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:45.653173+00:00 | window of 10 pkts over 0.16s |  attack=Recon | conf=0.476 | model=heavy_stage2
+2026-09-25 20:33:45,870 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:45.870814+00:00 | window of 10 pkts over 0.16s |  attack=Benign | conf=0.554 | model=heavy_stage1
+2026-09-25 20:33:46,090 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:46.090319+00:00 | window of 10 pkts over 0.20s |  attack=Benign | conf=0.638 | model=heavy_stage1
+2026-09-25 20:33:46,357 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:46.357859+00:00 | window of 10 pkts over 0.20s |  attack=Web | conf=0.842 | model=heavy_stage2
+2026-09-25 20:33:46,758 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:46.758090+00:00 | window of 10 pkts over 0.15s |  attack=Recon | conf=0.409 | model=heavy_stage2
+2026-09-25 20:33:47,049 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:47.049377+00:00 | window of 10 pkts over 0.05s |  attack=Benign | conf=0.944 | model=heavy_stage1
+2026-09-25 20:33:47,257 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:47.257597+00:00 | [w100] window of 100 pkts over 1.44s |  attack=Recon | conf=0.558 | model=heavy_stage2_w100
+2026-09-25 20:33:47,553 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:47.553790+00:00 | window of 10 pkts over 0.05s |  attack=Benign | conf=0.790 | model=heavy_stage1
+2026-09-25 20:33:47,771 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:47.771172+00:00 | window of 10 pkts over 0.10s |  attack=Benign | conf=0.830 | model=heavy_stage1
+2026-09-25 20:33:48,052 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:48.052073+00:00 | window of 10 pkts over 0.03s |  attack=Benign | conf=0.567 | model=heavy_stage1
+2026-09-25 20:33:48,271 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:48.271902+00:00 | window of 10 pkts over 0.02s |  attack=Benign | conf=0.777 | model=heavy_stage1
+2026-09-25 20:33:48,541 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:48.541688+00:00 | window of 10 pkts over 0.07s |  attack=Benign | conf=0.564 | model=heavy_stage1
+2026-09-25 20:33:48,762 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:48.762140+00:00 | window of 10 pkts over 0.09s |  attack=Benign | conf=0.795 | model=heavy_stage1
+2026-09-25 20:33:48,978 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:48.978580+00:00 | window of 10 pkts over 0.05s |  attack=Benign | conf=0.520 | model=heavy_stage1
+2026-09-25 20:33:49,246 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:49.246596+00:00 | window of 10 pkts over 0.04s |  attack=Benign | conf=0.648 | model=heavy_stage1
+2026-09-25 20:33:49,463 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:49.463572+00:00 | window of 10 pkts over 80.83s |  attack=Recon | conf=0.546 | model=heavy_stage2
+2026-09-25 20:33:49,685 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:49.685896+00:00 | window of 10 pkts over 0.13s |  attack=Benign | conf=0.627 | model=heavy_stage1
+2026-09-25 20:33:49,943 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:49.943575+00:00 | [w100] window of 100 pkts over 81.56s |  attack=Web | conf=0.683 | model=heavy_stage2_w100
+2026-09-25 20:33:50,164 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:50.164754+00:00 | window of 10 pkts over 0.26s |  attack=Web | conf=0.681 | model=heavy_stage2
+2026-09-25 20:33:50,390 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:50.390851+00:00 | window of 10 pkts over 0.37s |  attack=Web | conf=0.845 | model=heavy_stage2
+2026-09-25 20:33:50,654 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:50.654901+00:00 | window of 10 pkts over 0.18s |  attack=Web | conf=0.649 | model=heavy_stage2
+2026-09-25 20:33:50,951 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:50.951844+00:00 | window of 10 pkts over 0.19s |  attack=Benign | conf=0.691 | model=heavy_stage1
+2026-09-25 20:33:51,164 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:51.164766+00:00 | window of 10 pkts over 0.04s |  attack=Benign | conf=0.728 | model=heavy_stage1
+2026-09-25 20:33:51,461 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:51.461689+00:00 | window of 10 pkts over 0.14s |  attack=Recon | conf=0.713 | model=heavy_stage2
+2026-09-25 20:33:51,745 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:51.745388+00:00 | window of 10 pkts over 0.18s |  attack=Benign | conf=0.712 | model=heavy_stage1
+2026-09-25 20:33:52,150 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:52.150351+00:00 | window of 10 pkts over 0.35s |  attack=Recon | conf=0.408 | model=heavy_stage2
+2026-09-25 20:33:52,376 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:52.376354+00:00 | window of 10 pkts over 0.33s |  attack=Web | conf=0.401 | model=heavy_stage2
+2026-09-25 20:33:52,642 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:52.642940+00:00 | window of 10 pkts over 0.20s |  attack=Benign | conf=0.563 | model=heavy_stage1
+2026-09-25 20:33:52,851 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:52.851360+00:00 | [w100] window of 100 pkts over 2.39s |  attack=Web | conf=0.716 | model=heavy_stage2_w100
+2026-09-25 20:33:53,072 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:33:53.072277+00:00 | window of 10 pkts over 0.15s |  attack=Benign | conf=0.550 | model=heavy_stage1
+2026-09-25 20:33:53,356 INFO __main__: [!! ATTACK ] 2026-09-25T20:33:53.356811+00:00 | window of 10 pkts over 0.12s |  attack=Recon | conf=0.846 | model=heavy_stage2
+2026-09-25 20:33:53,358 INFO evidence_collect: EVIDENCE ACQUISITION STARTED | incident=20260925_203353_356964 | attack=Recon
+2026-09-25 20:33:53,362 INFO evidence_collect:   1/4 Network layer saved: /evidence/incident_20260925_203353_356964/network_capture.pcap
+2026-09-25 20:33:53,363 INFO evidence_collect:   2/4 Process layer saved: /evidence/incident_20260925_203353_356964/processes.json (2 processes)
+2026-09-25 20:33:53,364 INFO evidence_collect:   3/4 Memory layer saved: /evidence/incident_20260925_203353_356964/memory.json

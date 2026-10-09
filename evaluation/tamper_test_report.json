@@ -11,21 +11,21 @@
       "expected": "INVALID",
       "result": "MANUAL_CHECK_NEEDED",
       "pass": null,
-      "note": "File content was corrupted at incident_20260924_065712_467768/network_capture.pcap \u2014 re-run your evidence-file hash check (bundle_hash in chain_of_custody.py) against this incident to confirm it now reads INVALID."
+      "note": "File content was corrupted at incident_20260925_202756_796595/network_capture.pcap \u2014 re-run your evidence-file hash check (bundle_hash in chain_of_custody.py) against this incident to confirm it now reads INVALID."
     },
     {
       "test": "C - delete evidence file",
       "expected": "INVALID",
       "result": "INVALID",
       "pass": true,
-      "note": "deleted incident_20260924_065712_467768/network_capture.pcap; a completeness check should now flag this incident"
+      "note": "deleted incident_20260925_202756_796595/network_capture.pcap; a completeness check should now flag this incident"
     },
     {
       "test": "D - modify chain entry",
       "expected": "INVALID",
       "result": "INVALID",
       "pass": true,
-      "broken_at_index": 13
+      "broken_at_index": 42
     }
   ],
   "experiment_5_chain_verification": {
@@ -129,11 +129,243 @@
       {
         "incident_index": 24,
         "valid_up_to_here": true
+      },
+      {
+        "incident_index": 25,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 26,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 27,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 28,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 29,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 30,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 31,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 32,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 33,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 34,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 35,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 36,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 37,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 38,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 39,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 40,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 41,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 42,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 43,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 44,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 45,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 46,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 47,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 48,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 49,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 50,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 51,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 52,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 53,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 54,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 55,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 56,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 57,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 58,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 59,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 60,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 61,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 62,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 63,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 64,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 65,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 66,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 67,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 68,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 69,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 70,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 71,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 72,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 73,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 74,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 75,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 76,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 77,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 78,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 79,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 80,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 81,
+        "valid_up_to_here": true
+      },
+      {
+        "incident_index": 82,
+        "valid_up_to_here": true
       }
     ],
-    "tampered_incident_index": 12,
+    "tampered_incident_index": 41,
     "chain_valid_after_tampering": false,
-    "first_broken_at": 13,
+    "first_broken_at": 42,
     "demonstrates": "every incident from the tampered one onward should now fail verification"
   }
 }

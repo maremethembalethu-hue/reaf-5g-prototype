@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-09-25T20:30:42.887464+00:00",
+  "processes": [
+    {
+      "status": "running",
+      "cpu_percent": 165.6,
+      "memory_percent": 2.3775384948369567,
+      "name": "python3",
+      "pid": 1
+    },
+    {
+      "status": "sleeping",
+      "cpu_percent": 0.0,
+      "memory_percent": 0.06553890748933729,
+      "name": "tcpdump",
+      "pid": 96
+    }
+  ]
+}

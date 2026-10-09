@@ -1,202 +1,526 @@
 {
-  "generated_at": "2026-09-24T08:59:33.655868",
+  "generated_at": "2026-09-25T22:47:21.480333",
   "experiment_1_latency": {
     "runs": [
       {
         "flow_id": 4000900370,
         "attack_type": "Recon",
-        "evidence_acquisition_ms": 11.31,
-        "total_ms": 217.91
+        "evidence_acquisition_ms": 388.68,
+        "total_ms": 600.8
       },
       {
         "flow_id": 4000900370,
         "attack_type": "Web",
-        "evidence_acquisition_ms": 97.62,
-        "total_ms": 304.97
+        "evidence_acquisition_ms": 13.47,
+        "total_ms": 224.83
       },
       {
         "flow_id": 4000900370,
-        "attack_type": "Spoofing",
-        "evidence_acquisition_ms": 32.07,
-        "total_ms": 243.99
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 191.06,
+        "total_ms": 396.34
       },
       {
         "flow_id": 4000900370,
         "attack_type": "Web",
-        "evidence_acquisition_ms": 5.44,
-        "total_ms": 215.68
+        "evidence_acquisition_ms": 98.49,
+        "total_ms": 376.71
       },
       {
-        "flow_id": 477243884,
-        "attack_type": "DDoS",
-        "evidence_acquisition_ms": 30.42,
-        "total_ms": 311.08
-      },
-      {
-        "flow_id": 477243884,
-        "attack_type": "Recon",
-        "evidence_acquisition_ms": 10.03,
-        "total_ms": 218.93
-      },
-      {
-        "flow_id": 477243884,
-        "attack_type": "DDoS",
-        "evidence_acquisition_ms": 10.18,
-        "total_ms": 216.8
-      },
-      {
-        "flow_id": 477243884,
-        "attack_type": "DDoS",
-        "evidence_acquisition_ms": 86.34,
-        "total_ms": 297.96
-      },
-      {
-        "flow_id": 477243884,
-        "attack_type": "Recon",
-        "evidence_acquisition_ms": 8.54,
-        "total_ms": 214.76
-      },
-      {
-        "flow_id": 477243884,
-        "attack_type": "DDoS",
-        "evidence_acquisition_ms": 96.18,
-        "total_ms": 361.16
-      },
-      {
-        "flow_id": 477243884,
-        "attack_type": "DDoS",
-        "evidence_acquisition_ms": 9.16,
-        "total_ms": 299.97
-      },
-      {
-        "flow_id": null,
-        "attack_type": "DoS",
-        "evidence_acquisition_ms": 206.66,
-        "total_ms": 469.06
-      },
-      {
-        "flow_id": 3819750367,
+        "flow_id": 4000900370,
         "attack_type": "Spoofing",
-        "evidence_acquisition_ms": 10.72,
-        "total_ms": 292.28
+        "evidence_acquisition_ms": 7.06,
+        "total_ms": 258.13
       },
       {
-        "flow_id": 3819750367,
-        "attack_type": "DoS",
-        "evidence_acquisition_ms": 184.7,
-        "total_ms": 391.52
-      },
-      {
-        "flow_id": 1349499731,
-        "attack_type": "Web",
-        "evidence_acquisition_ms": 8.07,
-        "total_ms": 214.17
-      },
-      {
-        "flow_id": 3256857773,
-        "attack_type": "Mirai",
-        "evidence_acquisition_ms": 102.43,
-        "total_ms": 308.07
-      },
-      {
-        "flow_id": 1164324773,
-        "attack_type": "Spoofing",
-        "evidence_acquisition_ms": 91.61,
-        "total_ms": 302.18
-      },
-      {
-        "flow_id": 1164324773,
+        "flow_id": 4000900370,
         "attack_type": "Recon",
-        "evidence_acquisition_ms": 9.88,
-        "total_ms": 291.02
-      },
-      {
-        "flow_id": 1351419100,
-        "attack_type": "Recon",
-        "evidence_acquisition_ms": 5.35,
-        "total_ms": 211.71
-      },
-      {
-        "flow_id": 1351419100,
-        "attack_type": "Spoofing",
-        "evidence_acquisition_ms": 10.68,
-        "total_ms": 216.34
-      },
-      {
-        "flow_id": 1351419100,
-        "attack_type": "BruteForce",
-        "evidence_acquisition_ms": 7.45,
-        "total_ms": 212.89
-      },
-      {
-        "flow_id": 1351419100,
-        "attack_type": "Recon",
-        "evidence_acquisition_ms": 10.64,
+        "evidence_acquisition_ms": 9.1,
         "total_ms": 217.87
       },
       {
-        "flow_id": 1351419100,
+        "flow_id": 4000900370,
         "attack_type": "Web",
-        "evidence_acquisition_ms": 84.53,
-        "total_ms": 294.29
+        "evidence_acquisition_ms": 85.76,
+        "total_ms": 295.11
       },
       {
-        "flow_id": 1351419100,
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 5.26,
+        "total_ms": 212.21
+      },
+      {
+        "flow_id": 4000900370,
         "attack_type": "Recon",
-        "evidence_acquisition_ms": 8.5,
+        "evidence_acquisition_ms": 9.88,
         "total_ms": 215.39
       },
       {
-        "flow_id": 1351419100,
+        "flow_id": 4000900370,
         "attack_type": "Web",
-        "evidence_acquisition_ms": 7.22,
-        "total_ms": 212.61
+        "evidence_acquisition_ms": 15.06,
+        "total_ms": 221.12
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 12.59,
+        "total_ms": 219.01
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 89.87,
+        "total_ms": 385.19
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 12.47,
+        "total_ms": 286.39
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 8.98,
+        "total_ms": 216.49
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 8.55,
+        "total_ms": 215.31
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 94.23,
+        "total_ms": 302.73
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 9.8,
+        "total_ms": 215.82
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 8.48,
+        "total_ms": 218.48
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 69.24,
+        "total_ms": 275.17
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 13.29,
+        "total_ms": 220.49
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 91.24,
+        "total_ms": 300.6
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 9.87,
+        "total_ms": 223.64
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 71.76,
+        "total_ms": 284.88
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 7.75,
+        "total_ms": 212.5
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 8.14,
+        "total_ms": 296.13
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 184.36,
+        "total_ms": 389.33
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 85.25,
+        "total_ms": 290.4
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 88.23,
+        "total_ms": 298.27
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 10.85,
+        "total_ms": 217.18
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 11.7,
+        "total_ms": 284.34
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 9.9,
+        "total_ms": 216.1
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 9.35,
+        "total_ms": 215.58
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 11.32,
+        "total_ms": 218.4
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 65.91,
+        "total_ms": 276.33
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 86.29,
+        "total_ms": 293.69
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 14.41,
+        "total_ms": 221.97
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 92.25,
+        "total_ms": 370.59
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 7.85,
+        "total_ms": 267.56
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 7.2,
+        "total_ms": 212.57
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 11.79,
+        "total_ms": 218.48
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 9.26,
+        "total_ms": 215.56
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 10.76,
+        "total_ms": 217.26
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 9.33,
+        "total_ms": 216.32
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 12.65,
+        "total_ms": 288.95
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 184.09,
+        "total_ms": 389.8
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 5.88,
+        "total_ms": 213.16
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 57.28,
+        "total_ms": 262.38
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 12.71,
+        "total_ms": 289.41
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 92.62,
+        "total_ms": 299.11
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 91.54,
+        "total_ms": 302.89
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 294.41,
+        "total_ms": 581.82
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 12.7,
+        "total_ms": 222.15
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 14.82,
+        "total_ms": 221.59
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 221.02,
+        "total_ms": 431.51
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 6.84,
+        "total_ms": 212.16
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 11.75,
+        "total_ms": 218.48
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 87.62,
+        "total_ms": 379.29
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 168.49,
+        "total_ms": 374.3
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "BruteForce",
+        "evidence_acquisition_ms": 255.15,
+        "total_ms": 466.57
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 114.72,
+        "total_ms": 320.99
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 11.39,
+        "total_ms": 217.92
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 74.53,
+        "total_ms": 284.15
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 11.34,
+        "total_ms": 217.99
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 95.11,
+        "total_ms": 299.73
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 81.12,
+        "total_ms": 293.73
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 8.48,
+        "total_ms": 285.04
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 92.55,
+        "total_ms": 384.22
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 99.7,
+        "total_ms": 366.0
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 9.55,
+        "total_ms": 282.17
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 95.78,
+        "total_ms": 318.88
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 172.29,
+        "total_ms": 379.76
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 10.31,
+        "total_ms": 216.23
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 174.14,
+        "total_ms": 379.13
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 8.93,
+        "total_ms": 214.99
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 10.44,
+        "total_ms": 221.32
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 9.22,
+        "total_ms": 300.17
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 5.97,
+        "total_ms": 211.99
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 10.69,
+        "total_ms": 217.62
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 164.38,
+        "total_ms": 375.61
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 181.2,
+        "total_ms": 392.76
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Spoofing",
+        "evidence_acquisition_ms": 9.19,
+        "total_ms": 215.96
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Recon",
+        "evidence_acquisition_ms": 207.27,
+        "total_ms": 488.84
+      },
+      {
+        "flow_id": 4000900370,
+        "attack_type": "Web",
+        "evidence_acquisition_ms": 14.03,
+        "total_ms": 221.99
       }
     ],
-    "mean_ms": 270.1,
-    "median_ms": 243.99,
-    "min_ms": 211.71,
-    "max_ms": 469.06,
-    "stdev_ms": 67.02,
-    "pct_under_target": 100.0,
+    "mean_ms": 286.65,
+    "median_ms": 276.33,
+    "min_ms": 211.99,
+    "max_ms": 600.8,
+    "stdev_ms": 84.83,
+    "pct_under_target": 97.6,
     "target_ms": 500
   },
   "experiment_2_scenarios": [
     {
       "scenario": "Benign",
-      "windows": 394,
-      "correctly_left_benign": 328,
-      "false_positive_rate_pct": 16.8
-    },
-    {
-      "scenario": "DDoS",
-      "windows": 1783,
-      "correctly_flagged": 1624,
-      "detection_rate_pct": 91.1
-    },
-    {
-      "scenario": "Mirai",
-      "windows": 72,
-      "correctly_flagged": 64,
-      "detection_rate_pct": 88.9
-    },
-    {
-      "scenario": "Recon",
-      "windows": 927,
-      "correctly_flagged": 352,
-      "detection_rate_pct": 38.0
-    },
-    {
-      "scenario": "Spoofing",
-      "windows": 20,
-      "correctly_flagged": 0,
-      "detection_rate_pct": 0.0
+      "windows": 4567,
+      "correctly_left_benign": 2265,
+      "false_positive_rate_pct": 50.4
     }
   ],
   "experiment_3_completeness": {
     "incidents": [
       {
-        "incident": "20260924_065210_557341",
+        "incident": "20260925_202719_297861",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -206,7 +530,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065219_162950",
+        "incident": "20260925_202729_016086",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -216,7 +540,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065221_367915",
+        "incident": "20260925_202756_796595",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -226,7 +550,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065256_692990",
+        "incident": "20260925_202759_177267",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -236,7 +560,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065303_446812",
+        "incident": "20260925_202801_873887",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -246,7 +570,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065319_351089",
+        "incident": "20260925_202827_895472",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -256,7 +580,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065333_548902",
+        "incident": "20260925_202832_791126",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -266,7 +590,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065403_651374",
+        "incident": "20260925_202846_691635",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -276,7 +600,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065429_341202",
+        "incident": "20260925_202859_786073",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -286,7 +610,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065433_837375",
+        "incident": "20260925_202903_172758",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -296,7 +620,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065503_935276",
+        "incident": "20260925_202936_969604",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -306,7 +630,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065526_840970",
+        "incident": "20260925_202937_875517",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -316,7 +640,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065654_324681",
+        "incident": "20260925_203008_262506",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -326,7 +650,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065656_851682",
+        "incident": "20260925_203013_172335",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -336,7 +660,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065712_467768",
+        "incident": "20260925_203018_677134",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -346,7 +670,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065716_025800",
+        "incident": "20260925_203042_887607",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -356,7 +680,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065727_530069",
+        "incident": "20260925_203046_970063",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -366,7 +690,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065732_523594",
+        "incident": "20260925_203104_576297",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -376,7 +700,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065802_724963",
+        "incident": "20260925_203113_691726",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -386,7 +710,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065817_829614",
+        "incident": "20260925_203128_361498",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -396,7 +720,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065819_623533",
+        "incident": "20260925_203147_875129",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -406,7 +730,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065834_223745",
+        "incident": "20260925_203158_176345",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -416,7 +740,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065838_530147",
+        "incident": "20260925_203215_693266",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -426,7 +750,7 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065908_463242",
+        "incident": "20260925_203222_052398",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -436,7 +760,587 @@
         "completeness_pct": 100.0
       },
       {
-        "incident": "20260924_065917_315125",
+        "incident": "20260925_203245_748497",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203257_963350",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203319_162384",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203328_169067",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203353_356964",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203400_444078",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203419_753145",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203424_943876",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203434_248845",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203457_069916",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203506_850513",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203534_155456",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203539_843526",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203558_833084",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203606_840843",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203617_276207",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203650_035733",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203652_645588",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203655_638745",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203720_624813",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203728_747961",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203734_838730",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203751_569079",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203759_024424",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203812_929756",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203825_336135",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203839_927834",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203858_438401",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203912_327478",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203924_507104",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_203955_840322",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204003_865850",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204027_820928",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204028_946554",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204037_956930",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204107_814034",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204108_217693",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204110_431010",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204142_838007",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204150_311901",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204214_631221",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204233_112526",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204246_014414",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204317_306631",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204322_293712",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204349_399018",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204415_130174",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204433_798151",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204450_116200",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204508_597220",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204520_010372",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204540_788551",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204541_695935",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204614_291812",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204617_526906",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204644_597796",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204648_113475",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204708_981252",
+        "pcap": true,
+        "processes": true,
+        "memory": true,
+        "syslog": true,
+        "metadata": true,
+        "chain_of_custody": true,
+        "completeness_pct": 100.0
+      },
+      {
+        "incident": "20260925_204717_804402",
         "pcap": true,
         "processes": true,
         "memory": true,
@@ -450,16 +1354,16 @@
   },
   "experiment_6_burst_level": {
     "cooldown_seconds_used": 30.0,
-    "total_bursts": 6,
-    "bursts_with_at_least_one_incident": 4,
-    "burst_level_evidence_pct": 66.7,
+    "total_bursts": 0,
+    "bursts_with_at_least_one_incident": 0,
+    "burst_level_evidence_pct": 0.0,
     "note": "cooldown_seconds_used must match trigger.py's real cooldown value -- set TRIGGER_COOLDOWN_SECONDS if the default (5.0s) is wrong for this deployment."
   },
   "experiment_7_reliability": {
-    "attack_runs": 9,
-    "detected": 6,
-    "detection_rate_pct": 66.7,
+    "attack_runs": 0,
+    "detected": 0,
+    "detection_rate_pct": null,
     "evidence_success_rate_pct": 100.0,
-    "avg_acquisition_ms": 45.83
+    "avg_acquisition_ms": 63.47
   }
 }

@@ -1,0 +1,22 @@
+2026-09-25 20:27:15,051 INFO __main__: REAF-5G Edge Node: Packet Capture
+2026-09-25 20:27:15,051 INFO __main__: Method    : tcpdump pipe -> Scapy
+2026-09-25 20:27:15,051 INFO __main__: UE filter : 192.168.100.0/24  (prefix: 192.168.100.*)
+2026-09-25 20:27:15,051 INFO __main__: Evidence  : /evidence
+2026-09-25 20:27:15,051 INFO __main__: Window    : 10 packets (stage1/stage2 fast path) + 100 packets (stage2 Flood/Mirai override, dual-window)
+2026-09-25 20:27:15,054 INFO __main__: Starting tcpdump capture pipe...
+2026-09-25 20:27:15,055 INFO __main__: Waiting for traffic...
+2026-09-25 20:27:16,350 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:27:16.350485+00:00 | window of 10 pkts over 0.09s |  attack=Benign | conf=0.974 | model=heavy_stage1
+2026-09-25 20:27:16,577 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:27:16.577691+00:00 | window of 10 pkts over 0.10s |  attack=Benign | conf=0.988 | model=heavy_stage1
+2026-09-25 20:27:16,885 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:27:16.885472+00:00 | window of 10 pkts over 0.02s |  attack=Benign | conf=0.815 | model=heavy_stage1
+2026-09-25 20:27:17,193 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:27:17.193604+00:00 | window of 10 pkts over 0.23s |  attack=Benign | conf=0.911 | model=heavy_stage1
+2026-09-25 20:27:17,482 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:27:17.482948+00:00 | window of 10 pkts over 0.04s |  attack=Benign | conf=0.711 | model=heavy_stage1
+2026-09-25 20:27:17,880 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:27:17.880710+00:00 | window of 10 pkts over 0.08s |  attack=Benign | conf=0.990 | model=heavy_stage1
+2026-09-25 20:27:18,109 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:27:18.109501+00:00 | window of 10 pkts over 0.11s |  attack=Benign | conf=0.893 | model=heavy_stage1
+2026-09-25 20:27:18,382 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:27:18.382040+00:00 | window of 10 pkts over 0.04s |  attack=Benign | conf=0.928 | model=heavy_stage1
+2026-09-25 20:27:18,681 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:27:18.681876+00:00 | window of 10 pkts over 0.15s |  attack=Benign | conf=0.833 | model=heavy_stage1
+2026-09-25 20:27:19,084 INFO __main__: [UE-TUNNEL ] 2026-09-25T20:27:19.084235+00:00 | window of 10 pkts over 0.13s |  attack=Benign | conf=0.903 | model=heavy_stage1
+2026-09-25 20:27:19,296 INFO __main__: [!! ATTACK ] 2026-09-25T20:27:19.296300+00:00 | [w100] window of 100 pkts over 1.06s |  attack=Recon | conf=0.851 | model=heavy_stage2_w100
+2026-09-25 20:27:19,299 INFO evidence_collect: EVIDENCE ACQUISITION STARTED | incident=20260925_202719_297861 | attack=Recon
+2026-09-25 20:27:19,678 INFO evidence_collect:   1/4 Network layer saved: /evidence/incident_20260925_202719_297861/network_capture.pcap
+2026-09-25 20:27:19,682 INFO evidence_collect:   2/4 Process layer saved: /evidence/incident_20260925_202719_297861/processes.json (2 processes)
+2026-09-25 20:27:19,683 INFO evidence_collect:   3/4 Memory layer saved: /evidence/incident_20260925_202719_297861/memory.json
