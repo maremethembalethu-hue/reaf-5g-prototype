@@ -30,14 +30,56 @@ def hash_directory(directory):
 
 
 
-# VERIFY CHAIN OF CUSTODY
+# PROBLEM CODES
+# Machine-readable codes so callers (for example the tamper tests) do not have to
+# match on message text.
+
+LOG_MISSING = "LOG_MISSING"
+LOG_UNREADABLE = "LOG_UNREADABLE"
+PREVIOUS_HASH_BROKEN = "PREVIOUS_HASH_BROKEN"
+ENTRY_HASH_MISMATCH = "ENTRY_HASH_MISMATCH"
+ENTRY_FIELD_MISSING = "ENTRY_FIELD_MISSING"
+BUNDLE_DIR_FIELD_MISSING = "BUNDLE_DIR_FIELD_MISSING"
+BUNDLE_MISSING = "BUNDLE_MISSING"
+BUNDLE_HASH_MISMATCH = "BUNDLE_HASH_MISMATCH"
+BUNDLE_UNREADABLE = "BUNDLE_UNREADABLE"
 
 
-def verify_chain(coc_log):
+def _problem(index, incident_id, code, message):
+    return {"index": index, "incident_id": incident_id, "code": code, "message": message}
 
-    # Independently verifies the chain_of_custody.log.
+
+# RESOLVE BUNDLE DIRECTORY
+
+def resolve_bundle_dir(entry, bundle_root=None):
+    # Maps the bundle_dir recorded by the edge container to a path on this machine.
+    # Raises KeyError if the entry has no bundle_dir.
+    # If bundle_root is given (for example a scratch copy used by the tamper tests),
+    # the bundle is looked up strictly at bundle_root/<bundle folder name>, so the
+    # original evidence is never read by mistake.
+    logged_bundle_path = Path(entry["bundle_dir"])
+    if bundle_root is not None:
+        return Path(bundle_root) / logged_bundle_path.name
+    # Evidence path recorded by the edge container.
+    if str(logged_bundle_path).startswith("/evidence/"):
+        return CODE_DIR.parent / "evidence" / logged_bundle_path.relative_to("/evidence")
+    # Absolute path.
+    if logged_bundle_path.is_absolute():
+        return logged_bundle_path
+    # Relative path.
+    return CODE_DIR.parent / logged_bundle_path
+
+
+# VERIFY CHAIN OF CUSTODY (detailed)
+
+def verify_chain_detailed(coc_log, bundle_root=None):
+    # Independently verifies chain_of_custody.log.
+    # Returns (problems, entries). Each problem is a dict with
+    # index, incident_id, code and message.
+    # bundle_root: optional folder holding the incident_* bundles (see resolve_bundle_dir).
+    coc_log = Path(coc_log)
     if not coc_log.exists():
-        return (False,["chain_of_custody.log not found"],[])
+        return ([_problem(None, None, LOG_MISSING, "chain_of_custody.log not found")], [])
     entries = []
 
     try:
@@ -49,8 +91,7 @@ def verify_chain(coc_log):
                 entries.append(json.loads(line))
 
     except Exception as exc:
-
-        return (False,[f"Could not read chain_of_custody.log: {exc}"],[])
+        return ([_problem(None, None, LOG_UNREADABLE, f"Could not read chain_of_custody.log: {exc}")], [])
 
     problems = []
 
@@ -60,78 +101,113 @@ def verify_chain(coc_log):
     for i, entry in enumerate(entries):
         incident_id = entry.get("incident_id", f"entry_{i}")
         if entry.get("previous_hash") != expected_prev:
-            problems.append(
-                f"entry {i} ({incident_id}): "
-                f"previous_hash link broken"
-            )
+            problems.append(_problem(i, incident_id, PREVIOUS_HASH_BROKEN,
+                f"entry {i} ({incident_id}): previous_hash link broken"))
         # Recompute entry_hash
         try:
             recomputed_entry_hash = hashlib.sha256(
                 (
                     f"{entry['previous_hash']}"
-                    f"{entry['bundle_hash']}" 
-                    f"{entry['timestamp']}" 
+                    f"{entry['bundle_hash']}"
+                    f"{entry['timestamp']}"
                     f"{entry['incident_id']}").encode()).hexdigest()
 
             if recomputed_entry_hash != entry.get("entry_hash"):
-
-                problems.append(f"entry {i} ({incident_id}): "
-                    f"entry_hash does not match recomputed value")
+                problems.append(_problem(i, incident_id, ENTRY_HASH_MISMATCH,
+                    f"entry {i} ({incident_id}): entry_hash does not match recomputed value"))
 
         except KeyError as exc:
+            problems.append(_problem(i, incident_id, ENTRY_FIELD_MISSING,
+                f"entry {i} ({incident_id}): missing field required to recompute entry_hash: {exc}"))
 
-            problems.append(f"entry {i} ({incident_id}): "
-                f"missing field required to recompute entry_hash: {exc}")
-
-        
         # Verify evidence bundle
         bundle_dir = None
         try:
-            logged_bundle_path = Path(entry["bundle_dir"])
-            # Evidence path recorded by the edge container.
-            if str(logged_bundle_path).startswith("/evidence/"):
-                bundle_dir = ( CODE_DIR.parent / "evidence" / logged_bundle_path.relative_to("/evidence"))
-            # Absolute path.
-            elif logged_bundle_path.is_absolute():
-                bundle_dir = logged_bundle_path
-            # Relative path.
-            else:
-                bundle_dir = (CODE_DIR.parent / logged_bundle_path)
-
+            bundle_dir = resolve_bundle_dir(entry, bundle_root)
         except KeyError:
-            problems.append(
-                f"entry {i} ({incident_id}): "
-                f"bundle_dir field missing")
+            problems.append(_problem(i, incident_id, BUNDLE_DIR_FIELD_MISSING,
+                f"entry {i} ({incident_id}): bundle_dir field missing"))
 
-        
         # Check bundle exists and hash matches
         if bundle_dir is not None:
             if bundle_dir.exists():
                 try:
                     recomputed_bundle_hash = hash_directory(bundle_dir)
                     if recomputed_bundle_hash != entry.get("bundle_hash"):
-                        problems.append(
-                            f"entry {i} ({incident_id}): "
-                            f"bundle_hash mismatch — "
-                            f"bundle contents changed since acquisition "
-                            f"(possible tampering)")
+                        problems.append(_problem(i, incident_id, BUNDLE_HASH_MISMATCH,
+                            f"entry {i} ({incident_id}): bundle_hash mismatch - "
+                            f"bundle contents changed since acquisition (possible tampering)"))
 
                 except Exception as exc:
-                    problems.append(
-                        f"entry {i} ({incident_id}): "
-                        f"could not hash bundle: {exc}")
+                    problems.append(_problem(i, incident_id, BUNDLE_UNREADABLE,
+                        f"entry {i} ({incident_id}): could not hash bundle: {exc}"))
 
             else:
-                problems.append(
-                    f"entry {i} ({incident_id}): "
-                    f"bundle_dir missing: {bundle_dir}")
+                problems.append(_problem(i, incident_id, BUNDLE_MISSING,
+                    f"entry {i} ({incident_id}): bundle_dir missing: {bundle_dir}"))
 
-        
         # Move to the next chain entry
-        
+        expected_prev = entry.get("entry_hash", expected_prev)
+    return (problems, entries)
 
-        expected_prev = entry.get("entry_hash",expected_prev)
-    return (len(problems) == 0,problems, entries)
+
+# VERIFY CHAIN OF CUSTODY (original interface, unchanged)
+
+def verify_chain(coc_log, bundle_root=None):
+    # Same return value as before: (valid, list_of_message_strings, entries).
+    # bundle_root: folder holding the incident_* bundles (needed for archived runs).
+    problems, entries = verify_chain_detailed(coc_log, bundle_root=bundle_root)
+    return (len(problems) == 0, [p["message"] for p in problems], entries)
+
+
+# VERIFY ONE INCIDENT (automatic check for tamper tests B, C and D)
+
+def verify_incident(incident_id, evidence_dir=DEFAULT_EVIDENCE_DIR):
+    # Verifies one incident's bundle and the chain up to that entry.
+    # result is "VALID", "INVALID" or "NOT_FOUND".
+    # "codes" are the problems at this incident's entry; "earlier_codes" are broken
+    # chain links in earlier entries, which also invalidate every later entry.
+    coc_log = Path(evidence_dir) / "chain_of_custody.log"
+    problems, entries = verify_chain_detailed(coc_log, bundle_root=Path(evidence_dir))
+
+    for p in problems:
+        if p["index"] is None:           # log missing or unreadable
+            return {"incident_id": incident_id, "result": "INVALID",
+                    "codes": [p["code"]], "earlier_codes": [], "problems": [p["message"]]}
+
+    index = next((i for i, e in enumerate(entries) if e.get("incident_id") == incident_id), None)
+    if index is None:
+        return {"incident_id": incident_id, "result": "NOT_FOUND",
+                "codes": [], "earlier_codes": [], "problems": [f"incident {incident_id} not in chain"]}
+
+    own = [p for p in problems if p["index"] == index]
+    # Only broken chain links in earlier entries invalidate later entries. A changed
+    # bundle in an earlier incident does not change this incident's own evidence.
+    link_codes = {PREVIOUS_HASH_BROKEN, ENTRY_HASH_MISMATCH, ENTRY_FIELD_MISSING}
+    earlier = [p for p in problems if p["index"] < index and p["code"] in link_codes]
+    result = "INVALID" if (own or earlier) else "VALID"
+    return {"incident_id": incident_id,
+            "entry_index": index,
+            "result": result,
+            "codes": sorted({p["code"] for p in own}),
+            "earlier_codes": sorted({p["code"] for p in earlier}),
+            "problems": [p["message"] for p in own + earlier]}
+
+
+def tamper_test_b(incident_id, evidence_dir=DEFAULT_EVIDENCE_DIR):
+    # Test B: an evidence file was modified after acquisition. Call this after
+    # the file has been corrupted. Replaces the MANUAL_CHECK_NEEDED result.
+    check = verify_incident(incident_id, evidence_dir)
+    detected = (check["result"] == "INVALID" and BUNDLE_HASH_MISMATCH in check["codes"])
+    return {
+        "test": "B - modify evidence file",
+        "expected": "INVALID",
+        "result": check["result"],
+        "pass": detected,
+        "detected_by": check["codes"],
+        "note": (f"bundle_hash recomputed by forensic_validation.verify_incident for {incident_id}: "
+                 + ("mismatch found" if detected else "mismatch NOT found")),
+    }
 
 
 
@@ -238,10 +314,12 @@ def compare_ground_truth_with_results(ground_truth_attack_types,result_attack_ty
 
 
 def evaluate_forensic_readiness(evidence_dir=DEFAULT_EVIDENCE_DIR,truth_log_path=DEFAULT_TRUTH_LOG,joined_results_path=DEFAULT_JOINED_RESULTS,out_path=DEFAULT_OUT,benign_label="Benign"):
+    truth_log_path = Path(truth_log_path)
+    joined_results_path = Path(joined_results_path)
      # Complete forensic-readiness validation.
     # 1. VERIFY CHAIN OF CUSTODY
     coc_log = Path(evidence_dir) / "chain_of_custody.log"
-    chain_valid, chain_problems, entries = verify_chain(coc_log)
+    chain_valid, chain_problems, entries = verify_chain(coc_log, bundle_root=evidence_dir)
 
     # 2. READ TRUTH LOG
     (truth_records,ground_truth_attack_types,truth_problems) = read_truth_log(Path(truth_log_path),benign_label)
@@ -334,5 +412,11 @@ def evaluate_forensic_readiness(evidence_dir=DEFAULT_EVIDENCE_DIR,truth_log_path
 
 # PROGRAM ENTRY POINT
 if __name__ == "__main__":
+    import sys
+    # python forensic_validation.py --verify-incident <incident_id>
+    # prints the result and exits 1 if the incident is INVALID or NOT_FOUND.
+    if len(sys.argv) == 3 and sys.argv[1] == "--verify-incident":
+        outcome = verify_incident(sys.argv[2], DEFAULT_EVIDENCE_DIR)
+        print(json.dumps(outcome, indent=2))
+        sys.exit(0 if outcome["result"] == "VALID" else 1)
     evaluate_forensic_readiness( evidence_dir=DEFAULT_EVIDENCE_DIR, truth_log_path=DEFAULT_TRUTH_LOG, joined_results_path=DEFAULT_JOINED_RESULTS, out_path=DEFAULT_OUT)
-

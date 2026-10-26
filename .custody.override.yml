@@ -1,0 +1,11 @@
+services:
+  5g-edge-node:
+    environment:
+      - KEY_DIR=/keys
+      - ANCHOR_LOG=/anchors/chain_anchors.jsonl
+      - USE_RFC3161=${USE_RFC3161:-false}
+      - ANCHOR_EVERY=${ANCHOR_EVERY:-0}
+      - TSA_URL=${TSA_URL:-https://freetsa.org/tsr}
+    volumes:
+      - ${CUSTODY_KEYS_DIR}:/keys
+      - ${CUSTODY_ANCHORS_DIR}:/anchors

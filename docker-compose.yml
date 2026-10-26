@@ -14,6 +14,8 @@ services:
       - ./evidence:/evidence
       - ./evaluation:/evaluation
       - ./5g-edge-node/pkt_debug_out:/app/pkt_debug_out
+      - ./keys:/keys               # persists across runs, outside evidence/
+      - ./anchors:/anchors
     environment:
       - CAPTURE_IFACE=ogstun
       - EVIDENCE_DIR=/evidence
@@ -21,6 +23,10 @@ services:
       - USE_RFC3161=false
       - DEBUG_FEATURES=1
       - PACKET_TRACE=1
+      - KEY_DIR=/keys
+      - ANCHOR_LOG=/anchors/chain_anchors.jsonl
+      - USE_RFC3161=false          # true only if you accept the extra latency
+      - ANCHOR_EVERY=0
     restart: unless-stopped
     deploy:
       resources:

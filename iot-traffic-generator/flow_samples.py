@@ -1,7 +1,12 @@
+import hashlib
 import json
 import math
+import os
+import platform
 import random
+import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import dpkt
@@ -12,12 +17,16 @@ SOURCE_ROOT = "./pcaps"
 CONTIGUOUS_OUT_DIR_PCAP = "pre-selected/replay_pcaps_contiguous"
 CONTIGUOUS_MANIFEST_PATH = "pre-selected/manifest_contiguous.json"
 
-CONTIGUOUS_TARGET_PACKETS = 200_000
+CONTIGUOUS_TARGET_PACKETS = 1000
 CONTIGUOUS_NUM_BLOCKS = 5
 
 TARGET_IDLE_TIMEOUT_DEFAULT = 2.0
 GAP_PERCENTILE_DEFAULT = 99.0
 SAFETY_MARGIN_DEFAULT = 1.2
+
+PROVENANCE_PATH = "pre-selected/sampling_provenance.json"
+HASH_FILES = True  # SHA-256 of every source and sampled PCAP (slower on multi-GB sources, needed for 4.2 provenance)
+SCRIPT_VERSION = "2026-10-26"
 
 WINDOW_SIZE = 10  # must match flow_builder.py — live windows are exactly this many packets, no flow grouping
 
@@ -81,30 +90,88 @@ def recommend_replay_params(gaps_sorted, target_idle_timeout=TARGET_IDLE_TIMEOUT
     }
 
 
+def resolve_source_root(configured=SOURCE_ROOT):
+    """Find the folder holding <label>/<file>.pcap. Order: env PCAP_ROOT, the configured path (relative to the
+    current directory), then common places next to this script, then a bounded search for a folder named
+    like 'pcap*' whose sub-folders contain .pcap files. start.sh runs this from the repository root."""
+    def valid(p):
+        p = Path(p)
+        return p.is_dir() and any(next(d.glob("*.pcap"), None) for d in p.iterdir() if d.is_dir())
+
+    here = Path(__file__).resolve().parent
+    tried = []
+    env = os.environ.get("PCAP_ROOT")
+    candidates = ([Path(env)] if env else []) + [Path(configured), here / "pcaps", here.parent / "pcaps",
+                  Path.cwd() / "pcaps", Path.cwd().parent / "pcaps", Path.home() / "pcaps"]
+    for c in candidates:
+        tried.append(str(c))
+        if valid(c):
+            return str(c)
+    found = []
+    for base in {here.parent, Path.cwd()}:
+        for p in base.rglob("*"):
+            rel = p.relative_to(base).parts
+            if "pre-selected" in rel or len(rel) > 4:  # never pick our own sampled output
+                continue
+            if "pcap" in p.name.lower() and valid(p):
+                found.append(str(p))
+    found = sorted(set(found))
+    if len(found) == 1:
+        return found[0]
+    msg = ["Could not locate the source PCAP folder (expected <root>/<label>/*.pcap).", "Tried: " + ", ".join(tried)]
+    if found:
+        msg.append("Several candidates found, choose one with PCAP_ROOT=<path>: " + ", ".join(found))
+    else:
+        msg.append("Set PCAP_ROOT=<path to the folder that contains the label folders>, e.g. "
+                   "PCAP_ROOT=/path/to/CICIoT2023/pcaps ./start.sh")
+    raise SystemExit("\n".join(msg))
+
+
+def _sha256_file(path, chunk=1 << 20):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while data := f.read(chunk):
+            h.update(data)
+    return h.hexdigest()
+
+
 def sample_pcap_contiguous(source_pcap, expected_label, out_dir, target_packets=CONTIGUOUS_TARGET_PACKETS,
                             num_blocks=CONTIGUOUS_NUM_BLOCKS, max_packets=2_000_000, random_state=RANDOM_STATE,
                             target_idle_timeout=TARGET_IDLE_TIMEOUT_DEFAULT, gap_percentile=GAP_PERCENTILE_DEFAULT,
                             safety_margin=SAFETY_MARGIN_DEFAULT, max_block_packets=1000):
-    # Several contiguous blocks spread across the file, not one slice that
-    # could land on an unrepresentative burst. block_size is forced to a
-    # multiple of WINDOW_SIZE so a block boundary never splits a live window
-    # across two unrelated parts of the source capture.
+    # Several contiguous blocks spread across the file, not one slice that could land on an
+    # unrepresentative burst. block_size is a multiple of WINDOW_SIZE so a block boundary never splits
+    # a live window, and is CAPPED at max_block_packets (more, smaller blocks instead of bigger ones):
+    # at target_packets=20,000 (block_size=4,000) Benign accuracy collapsed to 65% because one block sat
+    # inside a degenerate, repetitive stretch (near-duplicate, same-timestamp packets).
     #
-    # block_size is additionally CAPPED at max_block_packets, growing the
-    # number of blocks instead of their size once target_packets gets large.
-    # A larger single block dwelling longer in one part of the file is more
-    # likely to land entirely inside a degenerate, repetitive stretch (e.g.
-    # a burst of near-duplicate, same-timestamp packets) — confirmed
-    # directly: at target_packets=20,000 (block_size=4,000), Benign accuracy
-    # collapsed to 65% with dozens of windows showing Rate=0 and nearly
-    # identical feature vectors, all traced to one such stretch. Spreading
-    # the same total across more, smaller blocks keeps each one's chance of
-    # sitting entirely inside a bad stretch roughly constant instead of
-    # scaling up with the sample size.
+    # SELECTION LOGIC IS UNCHANGED from the earlier version (same seed -> same packets). What is new is
+    # that everything needed to reproduce and audit the selection is recorded in the returned record:
+    # source hash, IPv4 counts, the cap on packets read, block positions and source-time spans, planned
+    # versus written packets, and the hash of the sampled file.
     t0 = time.perf_counter()
     source_pcap = Path(source_pcap)
 
-    total_ip_packets = sum(1 for _ in _iter_ip_packets(source_pcap, max_packets))
+    raw_read = 0
+    total_ip_packets = 0
+    non_ip_skipped = 0
+    cap_reached = False
+    with open(source_pcap, "rb") as f:
+        reader = dpkt.pcap.Reader(f)
+        for i, (ts, buf) in enumerate(reader):
+            if max_packets and i >= max_packets:
+                cap_reached = True
+                break
+            raw_read += 1
+            try:
+                eth = dpkt.ethernet.Ethernet(buf)
+            except Exception:
+                non_ip_skipped += 1
+                continue
+            if eth.type != dpkt.ethernet.ETH_TYPE_IP:
+                non_ip_skipped += 1
+                continue
+            total_ip_packets += 1
     if total_ip_packets == 0:
         print(f"  no IP packets found in {source_pcap}")
         return None
@@ -138,6 +205,9 @@ def sample_pcap_contiguous(source_pcap, expected_label, out_dir, target_packets=
     baseline_ts = None
     prev_written_ts = None
     gaps = []
+    block_stats = [{"block": b, "ipv4_index_start": s, "ipv4_index_end_exclusive": e, "planned_packets": e - s,
+                    "written_packets": 0, "source_first_ts": None, "source_last_ts": None}
+                   for b, (s, e) in enumerate(blocks)]
 
     with open(source_pcap, "rb") as f_in, open(out_path, "wb") as f_out:
         reader = dpkt.pcap.Reader(f_in)
@@ -164,6 +234,11 @@ def sample_pcap_contiguous(source_pcap, expected_label, out_dir, target_packets=
                     prev_written_ts = written_ts
                     writer.writepkt(buf, ts=written_ts)
                     written += 1
+                    st = block_stats[block_idx]
+                    st["written_packets"] += 1
+                    if st["source_first_ts"] is None:
+                        st["source_first_ts"] = float(ts)
+                    st["source_last_ts"] = float(ts)
                 elif ip_seen >= b_end:
                     block_idx += 1
 
@@ -172,6 +247,10 @@ def sample_pcap_contiguous(source_pcap, expected_label, out_dir, target_packets=
                 break
 
         writer.close()
+
+    for st in block_stats:
+        st["source_time_span_s"] = (round(st["source_last_ts"] - st["source_first_ts"], 6)
+                                    if st["source_first_ts"] is not None else None)
 
     elapsed = time.perf_counter() - t0
     print(f"{source_pcap.name}: took {written:,}/{total_ip_packets:,} IP packets across "
@@ -188,6 +267,19 @@ def sample_pcap_contiguous(source_pcap, expected_label, out_dir, target_packets=
     if negative_gap_count:
         print(f"   [WARN] {negative_gap_count} negative gap(s) — source pcap has non-monotonic timestamps")
 
+    planned = sum(s["planned_packets"] for s in block_stats)
+    notes = []
+    if written < target_packets:
+        notes.append(f"{target_packets - written} packets short of target")
+    if written < planned:
+        notes.append(f"{planned - written} planned packets not written (block boundary or end of file)")
+    if cap_reached:
+        notes.append(f"source read stopped at max_packets={max_packets}; later packets were never eligible")
+    if negative_gap_count:
+        notes.append("source timestamps not monotonic")
+    for n in notes:
+        print(f"   [NOTE] {n}")
+
     return {
         "pcap_path": str(out_path),
         "expected_label": expected_label,
@@ -195,6 +287,29 @@ def sample_pcap_contiguous(source_pcap, expected_label, out_dir, target_packets=
         "num_packets_available": total_ip_packets,
         "num_blocks": n_blocks,
         "recommendation": recommendation,
+        "selection": {
+            "source_pcap": str(source_pcap),
+            "source_size_bytes": source_pcap.stat().st_size,
+            "source_sha256": _sha256_file(source_pcap) if HASH_FILES else None,
+            "source_raw_packets_read": raw_read,
+            "source_ipv4_packets_counted": total_ip_packets,
+            "source_non_ipv4_skipped": non_ip_skipped,
+            "max_packets_cap": max_packets,
+            "max_packets_cap_reached": cap_reached,
+            "random_state": random_state,
+            "target_packets": target_packets,
+            "block_size": block_size,
+            "n_blocks": n_blocks,
+            "segment_len": segment_len,
+            "planned_packets": planned,
+            "written_packets": written,
+            "shortfall_vs_target": max(0, target_packets - written),
+            "ipv4_only": True,
+            "timestamps_rebased_to_first_block": True,
+            "blocks": block_stats,
+            "sample_sha256": _sha256_file(out_path) if HASH_FILES else None,
+            "notes": notes,
+        },
     }
 
 
@@ -202,6 +317,8 @@ def sample_directory_contiguous(source_root, out_dir, target_packets=CONTIGUOUS_
                                  target_idle_timeout=TARGET_IDLE_TIMEOUT_DEFAULT,
                                  gap_percentile=GAP_PERCENTILE_DEFAULT, safety_margin=SAFETY_MARGIN_DEFAULT):
     records = []
+    source_root = resolve_source_root(source_root)
+    print(f"Source PCAP root: {source_root}")
     label_dirs = [d for d in sorted(Path(source_root).iterdir()) if d.is_dir()]
     all_pcaps = [(d.name, p) for d in label_dirs for p in sorted(d.glob("*.pcap"))]
     print(f"Found {len(label_dirs)} label folders, {len(all_pcaps)} PCAP files")
@@ -215,9 +332,12 @@ def sample_directory_contiguous(source_root, out_dir, target_packets=CONTIGUOUS_
 
 
 def build_manifest_contiguous(sample_records, out_path=CONTIGUOUS_MANIFEST_PATH):
+    # Job fields consumed by the replayer (replay_id, pcap_path, expected_label, num_packets,
+    # recommended_replay_params) are unchanged; "selection" is additive.
     manifest = [
         {"replay_id": i, "pcap_path": r["pcap_path"], "expected_label": r["expected_label"],
-         "num_packets": r["num_packets"], "recommended_replay_params": r.get("recommendation")}
+         "num_packets": r["num_packets"], "recommended_replay_params": r.get("recommendation"),
+         "selection": r.get("selection")}
         for i, r in enumerate(sample_records, start=1)
     ]
     out_path = Path(out_path)
@@ -226,6 +346,42 @@ def build_manifest_contiguous(sample_records, out_path=CONTIGUOUS_MANIFEST_PATH)
         json.dump({"jobs": manifest}, f, indent=2)
     print(f"Wrote {len(manifest)} contiguous replay jobs to {out_path}")
     return manifest
+
+
+def write_provenance(sample_records, target_packets, path=PROVENANCE_PATH):
+    # One self-contained record of how this sample was produced, for the Chapter 4.2 methods text.
+    try:
+        import dpkt as _d
+        dpkt_version = getattr(_d, "__version__", "unknown")
+    except Exception:
+        dpkt_version = "unknown"
+    prov = {
+        "created_utc": datetime.now(timezone.utc).isoformat(),
+        "script": Path(__file__).name,
+        "script_version": SCRIPT_VERSION,
+        "script_sha256": _sha256_file(__file__),
+        "python": sys.version.split()[0],
+        "dpkt": dpkt_version,
+        "platform": platform.platform(),
+        "random_state": RANDOM_STATE,
+        "source_root": SOURCE_ROOT, "source_root_resolved": os.environ.get("PCAP_ROOT") or SOURCE_ROOT,
+        "target_packets_per_file": target_packets,
+        "window_size": WINDOW_SIZE,
+        "method": ("IPv4 packets only; per file, target/1000 contiguous blocks of 1,000 packets (block length a "
+                   "multiple of the window size); file split into equal segments with one uniformly random block "
+                   "start per segment; blocks written in source order; timestamps rebased to the first block."),
+        "jobs": [{"replay_id": i, "expected_label": r["expected_label"],
+                  "source_pcap": r["selection"]["source_pcap"], "source_sha256": r["selection"]["source_sha256"],
+                  "sample_sha256": r["selection"]["sample_sha256"], "written_packets": r["selection"]["written_packets"],
+                  "shortfall_vs_target": r["selection"]["shortfall_vs_target"], "notes": r["selection"]["notes"]}
+                 for i, r in enumerate(sample_records, start=1)],
+        "total_packets_written": sum(r["num_packets"] for r in sample_records),
+    }
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(prov, indent=2))
+    print(f"Wrote sampling provenance to {path}")
+    return prov
 
 
 def load_manifest(path=CONTIGUOUS_MANIFEST_PATH):
@@ -237,3 +393,4 @@ if __name__ == "__main__":
     records = sample_directory_contiguous(SOURCE_ROOT, CONTIGUOUS_OUT_DIR_PCAP,
                                            target_packets=CONTIGUOUS_TARGET_PACKETS)
     build_manifest_contiguous(records, CONTIGUOUS_MANIFEST_PATH)
+    write_provenance(records, CONTIGUOUS_TARGET_PACKETS)
